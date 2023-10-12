@@ -8,6 +8,8 @@ SoundWire 接口使用兩根信號線來做設備之間的連接：
 - Clock : 從 Master 發送到全部 Slave 的 clock
 - Data : 可以被所有設備驅動的 data 信號，並且可以配置沒有人驅動時的空載值
 
+而訊號線電壓通常訂為 `1.2V` or `1.8V`。
+
 Figure 8 為 SoundWire Master/Slave Interface，其內部的 digital interface 負責傳輸 payload, command 等；而 PHY 負責與其他 SoundWire 設備的物理連接。
 
 ![image](https://github.com/wenyuan0806/soundwire_notebook/assets/133325842/defa4bd4-657a-4bed-9fff-b7be24bc24f4)
