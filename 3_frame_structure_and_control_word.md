@@ -55,3 +55,18 @@ Control Word Fields
 
 而當 Command Owner 收到該 PREQ 後，會在接下來的 32 個 Frame 內發送 Ping Command 去讀取 Slave 狀態。一旦拉起了 PREQ，Slave 就會一直拉著直到成功收到來自 Owner 的 Ping Command。
 
+#### Opcode ####
+
+Opcode 由 3 bits 組成，目前 SoundWire 定義的 Opcode 有以下三種，如 Table 27：
+
+- Ping : 讓 Bus 上所有 Slave 都回傳狀態
+- Write : Commmand Owner 對一個或多個設備中的一個或多個 Register 寫一個 8 bits data
+- Read : Commmand Owner 從一個或多個設備中的一個或多個 Register 讀一個 8 bits data
+
+![Table 27](image/image.png)
+
+#### Static Synchronization ####
+
+#### PHY Synchronization ####
+
+#### Dynamic Synchronization ####
