@@ -39,3 +39,32 @@ Modified NRZI 有以下兩個優點：
 1. 如果當前 bitslot 沒有 owner，或是因為某些原因導致 data 沒有被驅動，這時 Master 的高阻抗 bus-keeper 也會讓 data 保持在 Logic 0 狀態，這樣有利於檢查出斷線的設備或錯誤的配置。
 2. 允許同一個 bitslot 擁有多個 owner，而多個 owner 之間的關係是 wire-OR，因此輸出 1 的 owner 會比輸出 0 的 owner 擁有更高的優先權 (因為是 wire-OR，因此輸出 0 的 owner 會被 1 的 owner 蓋過去)
 
+#### Timing Parameter Measuring Points
+
+此章節規範了 SoundWire PHY 訊號的電壓閥值及 timing，若沒有遵守規範會造成訊號傳輸發生非預期的錯誤。
+
+Figure 13 為 SoundWire Master 之 Clock Output 的電壓閥值及 timing：
+
+![Alt text](image/figure13.png)
+
+Figure 14 為 SoundWire Device Data Output 之三種不同案例：
+
+![Alt text](image/figure14.png)
+
+Figure 15 為 SoundWire Device Data Output 之三種不同案例的電壓閥值及 timing：
+
+![Alt text](image/figure15.png)
+
+Figure 17 為 SoundWire Device Data Input 的電壓閥值及 timing：
+
+![Alt text](image/figure17.png)
+
+Figure 18 為 Bus Keeper 的電壓閥值及 timing (Device 將 data line 從 high 拉 low)：
+
+![Alt text](image/figure18.png)
+
+Figure 19 為 Bus Keeper 的電壓閥值及 timing (Device 將 data line 從 low 拉 high)：
+
+![Alt text](image/figure19.png)
+
+> $t_{ZD}$ 代表從 High-Z 到開始 Driving 的時間；$t_{DZ}$ 代表從 Driving 轉為 High-Z 的時間
