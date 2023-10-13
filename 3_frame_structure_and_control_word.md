@@ -55,18 +55,113 @@ Control Word Fields
 
 而當 Command Owner 收到該 PREQ 後，會在接下來的 32 個 Frame 內發送 Ping Command 去讀取 Slave 狀態。一旦拉起了 PREQ，Slave 就會一直拉著直到成功收到來自 Owner 的 Ping Command。
 
+每個設備都會回傳一個 2 bits 的 Status，如下 Table 63：
+
+![Alt text](image/table63.png)
+
 #### Opcode ####
 
 Opcode 由 3 bits 組成，目前 SoundWire 定義的 Opcode 有以下三種，如 Table 27：
 
-- Ping : 讓 Bus 上所有 Slave 都回傳狀態
+- Ping : 讓 Bus 上所有 Slave 都回傳狀態 (至多 11 個設備)
 - Write : Commmand Owner 對一個或多個設備中的一個或多個 Register 寫一個 8 bits data
 - Read : Commmand Owner 從一個或多個設備中的一個或多個 Register 讀一個 8 bits data
 
-![Table 27](image/image.png)
+![Table 27](image/table27.png)
+
+當 Opcode 為 Ping 時，對應的 command field 如下：
+
+![Alt text](image/table28-1.png)
+![Alt text](image/table28-2.png)
+
+當 Opcode 為 Read/Write 時，對應的 command field 如下：
+
+![Alt text](image/table29.png)
+
+當 Opcode 為 Reserved 時，對應的 command field 如下：
+
+![Alt text](image/table30.png)
 
 #### Static Synchronization ####
 
+Static Synchronization 是一個固定的 8 bits value `b'10110001`，由 Master 產生並由 Slave 接收，以此來維持 Frame 的同步。
+
 #### PHY Synchronization ####
 
+PHY Synchronization 為 1 bit，由 Master 產生來通知 Slave 當前的 PHY 屬於什麼狀態，`0` 代表通的 PHY、`1` 代表 High-PHY。當 Slave 收到時就會把 PHY_Sync 值寫進對應的 Register。
+
 #### Dynamic Synchronization ####
+
+Dynamic Synchronization 為 4 bits，且為連續 15 個 Frame 的動態碼，如 Table 38。
+
+![Alt text](image/table38-1.png)
+![Alt text](image/table38-2.png)
+
+Peripheral 在透過 Static Synchronization 進行初次與 Master 的同步後，會再利用 Dynamic Synchronization 來檢查該同步是否符合預期。因此 Dynamic Synchronization 的目的就是用來降低 interface 對 bitstream 錯誤鎖定的機率。(Bitstream 中的 payload data bitslots 的靜態值有一定機率出現與 8 位元 static synchronization 欄位相同的位元值。)
+
+Dynamic Synchronization 值來自 4 bits LFSR (Linear Feedback Shift Register) 暫存器，其通過一個 PRBS (Pseudo-random Binary Sequence) 所產生出來的，而 LFSR 的初始值為 `b'1111`，Figure 26 為 LFSR 生成動態同步碼的 Pattern。
+
+![Alt text](image/figure26.png)
+
+#### Parity Check (PAR) ###
+
+Control Word 中有 1 bit 的奇偶校驗位，用來檢測數據傳輸過程中是否出現錯誤。**但請注意奇偶校驗的是 data 電平的高低次數而不是 Logic 0 or 1 的次數。**
+
+PAR 是由 Command Owner 經計算後產生的，會跟著 Control Word 發送到別的設備進行校驗，倘若設備計算出來的 PAR 與 Command Owner 不一致則可能引發中斷 (如果這時有 enable interrupt 的話)，並且會發送一個 `Command_Failed` 的 response，讓該 bus 上所有設備都丟棄這一個 Frame。
+
+奇偶校驗的 window 會超過一個 frame 的邊界 (超出多少則取決於 row 數)，也就是說一個奇偶校驗的 window 中會同時包含上一個 frame structure 的部分 bitslot 以及當前 frame structure 的部分 bitslot，因此做奇偶校驗時也會需要上一個 frame 的 bitslot，可以參考 Figure 24/25。
+
+![Alt text](image/figure24.png)
+![Alt text](image/figure25.png)
+
+#### NAK and ACK ####
+
+Control Word 中有 NAK 和 ACK 用來描述對 Command 的 Response。
+
+當有一個設備被選中是 command 的目標時，其 response 的 NAK & ACK 組合可能如下：
+
+|  Response | NAK | ACK | Remark |
+| --- | --- | --- | --- |
+| Command_Failed | 1 | 0 | 例如奇偶校驗失敗 |
+| Command_OK | 0 | 1 | 例如順利完成 Read/Write 操作 |
+| Command_Ignored | 0 | 0 | 例如讀了一個 Write-only Register |
+
+當有一個設備**沒有**被選中是 command 的目標時，其 response 的 NAK & ACK 組合可能如下：
+
+|  Response | NAK | ACK | Remark |
+| --- | --- | --- | --- |
+| Command_Failed | 1 | 0 | 例如奇偶校驗失敗 |
+| Command_Ignored | 0 | 0 | 例如自己並不是 Read/Write 操作的目標設備 |
+
+Command Fields
+-------
+
+#### Stream Synchronization Points (SSP) ####
+
+SSP 為 1 bit，用於設備間的傳輸同步。當一個設備中出現了不同的 sample rate，且 sample rate 之間又不是呈倍數關係，那麼就需要用到 SSP 來使 sample rate 和 frame 同步。
+
+#### Bus Request (BREQ) ####
+
+BREQ 為 1 bit，Monitor 可以透過拉 BREQ 來請求成為 Command Owner。
+
+#### Bus Release (BREL) ####
+
+BREL 為 1 bit，Master 可以透過拉 BREL 來允許 Monitor 成為 Command Owner。
+
+#### Slave Status (Slv_Stat_nn) ####
+
+一共包含了 12 個 Periphral 的狀態，每個 Peripheral 佔 2 bits，一共 24 bits。可以參考 Table 27。
+
+#### Device Address (DevAddr), Register Address (RegAddr), Register Data (RegData) ####
+
+- DevAddr 佔 4 bits
+- RegAddr 佔 16 bits
+- RegData 佔 8 bits
+
+Manager Initialization
+-------
+
+
+
+Peripheral Synchronization Process
+-------
