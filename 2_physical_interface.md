@@ -67,4 +67,4 @@ Figure 19 為 Bus Keeper 的電壓閥值及 timing (Device 將 data line 從 low
 
 ![Alt text](image/figure19.png)
 
-> $t_{ZD}$ 代表從 High-Z 到開始 Driving 的時間；$t_{DZ}$ 代表從 Driving 轉為 High-Z 的時間
+> t_ZD 代表從 High-Z 到開始 Driving 的時間；t_DZ 代表從 Driving 轉為 High-Z 的時間

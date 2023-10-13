@@ -122,16 +122,16 @@ Control Word 中有 NAK 和 ACK 用來描述對 Command 的 Response。
 
 |  Response | NAK | ACK | Remark |
 | --- | --- | --- | --- |
-| Command_Failed | 1 | 0 | 例如奇偶校驗失敗 |
-| Command_OK | 0 | 1 | 例如順利完成 Read/Write 操作 |
-| Command_Ignored | 0 | 0 | 例如讀了一個 Write-only Register |
+| `Command_Failed` | 1 | 0 | 例如奇偶校驗失敗 |
+| `Command_OK` | 0 | 1 | 例如順利完成 Read/Write 操作 |
+| `Command_Ignored` | 0 | 0 | 例如讀了一個 Write-only Register |
 
 當有一個設備**沒有**被選中是 command 的目標時，其 response 的 NAK & ACK 組合可能如下：
 
 |  Response | NAK | ACK | Remark |
 | --- | --- | --- | --- |
-| Command_Failed | 1 | 0 | 例如奇偶校驗失敗 |
-| Command_Ignored | 0 | 0 | 例如自己並不是 Read/Write 操作的目標設備 |
+| `Command_Failed` | 1 | 0 | 例如奇偶校驗失敗 |
+| `Command_Ignored` | 0 | 0 | 例如自己並不是 Read/Write 操作的目標設備 |
 
 Command Fields
 -------
@@ -157,11 +157,3 @@ BREL 為 1 bit，Master 可以透過拉 BREL 來允許 Monitor 成為 Command Ow
 - DevAddr 佔 4 bits
 - RegAddr 佔 16 bits
 - RegData 佔 8 bits
-
-Manager Initialization
--------
-
-
-
-Peripheral Synchronization Process
--------
