@@ -30,8 +30,19 @@ Clock
 
 Master 通過產生 clock 來實現數據傳輸。
 
-#### Clock Scaling
+#### Clock Scaling ####
 
-Master 可以動態調整 Clock Frequncy，以增加傳輸效率或節省功耗。Figure 31 就示範了 Master 是如何在還有 audio payload 在傳輸的期間改變 clock frequency。
+Master 可以動態調整 Clock Frequncy，以增加傳輸效率或節省功耗。Figure 31 示範了 Master 是如何在還有 audio payload 在傳輸的期間改變 clock frequency。(在該例子中，Master 在配置 Bank Switch Command 之前就已經配置了一系列的 Register 了，當 Frame 結束時就馬上切換成需要的 Clock Rate)
 
 ![Alt text](image/figure31.png)
+
+- 解釋 Figure 31 的動作：
+    - Master 將 Clock 從 12.288MHz 修改為 3.072MHz
+    - 上述在 CurrentBank 的修改讓當前的 `ClockScale` 值從 b'010 (divide-by-2) 變更為 b'100 (divide-by-8)
+    - Master 將 Frame Shape 的 Column 數從 8 修改為 2
+    - 上述在 CurrentBank 的修改讓當前 Data Port 1 的 `Sample Interval` 值從 8 變更為 2
+    - 上述在 CurrentBank 的修改讓 Data Port 2, 3, 4 停止了 payload 傳輸
+
+#### Clock Pause ####
+
+Clock Pause 是指 Master 不通過任何通知或預警，可以在任意時候直接暫停 Clock，使 Clock 暫時停在高電平或低電平一段時間。Clock Pause 只能由 Master 來執行，並且這個動作會打亂 Slave 接收 Frame 的過程，因此 Clock Pause 一般都用在沒有 active channel 的時候 (例如只做 Ping, Read/Write 時)。而 Clock Pause 與下面的 Clock Stopping 的相異之處在於 Clock Stopping 可以無縫恢復傳輸。
