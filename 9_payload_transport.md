@@ -83,3 +83,21 @@ Payload Data Container 是 **channel 傳輸 data 的基本單位**，`ContainerW
 Payload Data Block
 -------
 
+Payload Data Block 是由一個或多個 Payload Data Container 所組成，是 Data Port 進行傳輸的最小單位。
+
+Payload Data Block 有一個 `BlockPackingMode` 參數，其有兩種模式可以選擇，分別為 `Block-per-Port Mode` 和 `Block-per_channel Mode`。
+
+#### Block-per-Port Mode ####
+
+每個 Payload Data Block 都囊括了一組 Payload Channel Samples，並且每個 Payload Channel Sample 都對應其 channel。`BlockGroupCount` 參數決定了該 Payload Data Block 有幾組 Payload Channel Samples，如下圖：
+
+![Alt text](image/block-per-port.png)
+
+#### Block-per-Channel Mode ####
+
+將 Payload Data Block 又分成好幾個 Payload Data Sub-Block，每個 Sub-Block 都包含了一個 Payload Channel Samples，並且每個 Payload Channel Sample 都對應其 channel。在該模式下 `BlockGroupCount` 值固定為 1，如下圖：
+
+![Alt text](image/block-per-channel.png)
+
+上圖的 `SubBlockOffset` 參數用來區分每個 Payload Data Sub-Block。
+
