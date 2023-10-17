@@ -93,6 +93,8 @@ Payload Data Block 有一個 `BlockPackingMode` 參數，其有兩種模式可�
 
 ![Alt text](image/block-per-port.png)
 
+![Alt text](image/figure124.png)
+
 #### Block-per-Channel Mode ####
 
 將 Payload Data Block 又分成好幾個 Payload Data Sub-Block，每個 Sub-Block 都包含了一個 Payload Channel Samples，並且每個 Payload Channel Sample 都對應其 channel。在該模式下 `BlockGroupCount` 值固定為 1，如下圖：
@@ -101,3 +103,20 @@ Payload Data Block 有一個 `BlockPackingMode` 參數，其有兩種模式可�
 
 上圖的 `SubBlockOffset` 參數用來區分每個 Payload Data Sub-Block。
 
+Payload Positioning
+-------
+
+`BlockOffset` 參數可以用來控制 Payload Transport Window 的位移。主要目的是用於辨識 Payload Transport Window 中的有效數據位置，以確保接收端能夠正確解析音訊和控制數據。
+
+![Alt text](image/payload_positioning.png)
+
+Multiplexing Payload Streams
+-------
+
+如果有兩個 payload stream 的 sample rate 相同，則他們可以共享一個 Payload Data Window。而如果這些 stream 來自同一個 data port，並且設定了相同的傳輸參數 (Sub-Frame)，則他們在 Payload Transport Window 中會分享相同的 bitslot。
+
+兩個不同的 bitslots 之間可以使用 `BlockOffset` 來區分他們各自的 Payload Data Block，使其在相同的 Payload Transport Window 中不會互相覆蓋。
+
+Figure 133 可以看到 data port A 和 B 擁有相同的取樣率和 Transport Sub-Block 的配置，所以他們可以共用一個 Payload Transport Window，並通過 `BlockOffset` 來區分開。
+
+![Alt text](image/figure133.png)

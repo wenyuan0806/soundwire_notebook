@@ -1,7 +1,23 @@
 System Control
 =======
 
-本章節主要在介紹 SoundWire 的底層功能，包括 Resets, Clocks, Data Drive Collision, PHYs Selection 等。
+本章節主要在介紹 SoundWire 的底層功能，包括 Enumeration, Resets, Clocks, Data Drive Collision, PHYs Selection 等。
+
+Enumeration
+-------
+
+Master 在進行正常的數據傳輸前，其辨識和初始化 bus 上的 Device 的過程就稱為列舉 (Enumeration)。以下以逐條方式敘述多個裝置列舉的過程：
+
+- 當多個 Slave 剛連上 Bus 時，都會被當作第 0 號設備 (Device Number 0)
+- 接下來 Master 會發出 PING，所有的 Slave 都會把狀態回應在 Control Word 的 `Slave 0 Status` (bit 39 & 40)
+- 多個 Slave 回應的 Slave 0 Status 會在 bus 上 wire-OR (出現 Logic 1 時則會讓 data line 電位轉換)
+- 一旦 Master 看到 data line 電位轉換，它就會開始做 Enumeration
+- 首先，Master 會用 Read Command 讀 Device_ID Register 的第一個 byte (`SCP_DevID_0`)，bus 上所有的 Slave 都會收到該 Read Command
+- 所有的 Slave 會在 bus 上回應自己的 `SCP_DevID_0` Value，這些 Value 同樣會在 bus 上做 wire-OR，一旦有 Slave 發現它寫在 bus 上的 Value 與它讀回來看到的不一樣則會退出列舉，直到下次又有 Master 來 Read `SCP_DevID_0`
+    - 假如自己是一個 Slave，如果別的 Slave 的 Logic 1 覆蓋掉自己的 Logic 0，此時自己就會檢測到 bus contension 而停止此次列舉過程，直到下次又有 Master 來 Read `SCP_DevID_0`
+- Device_ID Register 共有 6 bytes (`SCP_DevID_0` to `SCP_DevID_5`)，Master 會依照順序從 `SCP_DevID_0` 讀到 `SCP_DevID_5`，讀到最後應會剩下最後一個 Slave，就賦予該 Slave 新的且唯一的 Device Number (1~11)
+- 接下來 Master 會重複上面三個步驟直到所有 Slave 都賦予新的 Device Number
+- 列舉流程結束
 
 Resets
 -------
