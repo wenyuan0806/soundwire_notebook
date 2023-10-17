@@ -16,8 +16,15 @@ Master 在進行正常的數據傳輸前，其辨識和初始化 bus 上的 Devi
 - 所有的 Slave 會在 bus 上回應自己的 `SCP_DevID_0` Value，這些 Value 同樣會在 bus 上做 wire-OR，一旦有 Slave 發現它寫在 bus 上的 Value 與它讀回來看到的不一樣則會退出列舉，直到下次又有 Master 來 Read `SCP_DevID_0`
     - 假如自己是一個 Slave，如果別的 Slave 的 Logic 1 覆蓋掉自己的 Logic 0，此時自己就會檢測到 bus contension 而停止此次列舉過程，直到下次又有 Master 來 Read `SCP_DevID_0`
 - Device_ID Register 共有 6 bytes (`SCP_DevID_0` to `SCP_DevID_5`)，Master 會依照順序從 `SCP_DevID_0` 讀到 `SCP_DevID_5`，讀到最後應會剩下最後一個 Slave，就賦予該 Slave 新的且唯一的 Device Number (1~11)
+    - Device Number 12 (Group 1) 和 13 (Group 2) 是做為群組用途，讓 Master 可以一次 Acceess 多個同群組的 Slave
+    - Device Number 14 指的就是 Master 自己
+    - Device Number 15 是指 Bus 上所有的 Device（Broadcast Access Mode），用於一次 access 所有 Device
 - 接下來 Master 會重複上面三個步驟直到所有 Slave 都賦予新的 Device Number
 - 列舉流程結束
+
+下圖就是每個裝置都會有的 DeviceID Register，共 6 bytes (48 bits)：
+
+![Alt text](image/device_id_register.png)
 
 Resets
 -------
