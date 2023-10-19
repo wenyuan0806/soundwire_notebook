@@ -10,11 +10,11 @@ Master 在進行正常的數據傳輸前，其辨識和初始化 bus 上的 Devi
 
 - 當多個 Slave 剛連上 Bus 時，都會被當作第 0 號設備 (Device Number 0)
 - 接下來 Master 會發出 PING，所有的 Slave 都會把狀態回應在 Control Word 的 `Slave 0 Status` (bit 39 & 40)
-- 多個 Slave 回應的 Slave 0 Status 會在 bus 上 wire-OR (出現 Logic 1 時則會讓 data line 電位轉換)
+- 多個 Slave 回應的 Slave 0 Status (`Attached_OK`) 會在 bus 上 wire-OR (出現 Logic 1 時則會讓 data line 電位轉換)
 - 一旦 Master 看到 data line 電位轉換，它就會開始做 Enumeration
 - 首先，Master 會用 Read Command 讀 Device_ID Register 的第一個 byte (`SCP_DevID_0`)，bus 上所有的 Slave 都會收到該 Read Command
 - 所有的 Slave 會在 bus 上回應自己的 `SCP_DevID_0` Value，這些 Value 同樣會在 bus 上做 wire-OR，一旦有 Slave 發現它寫在 bus 上的 Value 與它讀回來看到的不一樣則會退出列舉，直到下次又有 Master 來 Read `SCP_DevID_0`
-    - 假如自己是一個 Slave，如果別的 Slave 的 Logic 1 覆蓋掉自己的 Logic 0，此時自己就會檢測到 bus contension 而停止此次列舉過程，直到下次又有 Master 來 Read `SCP_DevID_0`
+    - 假如自己是一個 Slave，如果別的 Slave 的 Logic 1 覆蓋掉自己的 Logic 0，此時自己就會檢測到 bus contension 退出此次列舉過程，並且發出 `Command_Ignore`，直到下次又有 Master 來 Read `SCP_DevID_0`
 - Device_ID Register 共有 6 bytes (`SCP_DevID_0` to `SCP_DevID_5`)，Master 會依照順序從 `SCP_DevID_0` 讀到 `SCP_DevID_5`，讀到最後應會剩下最後一個 Slave，就賦予該 Slave 新的且唯一的 Device Number (1~11)
     - 可以參考 Figure 51，Master 除了賦予 Slave Device Number (1~11) 以外，還會給一個 `Group_Id` (1~2)。未來 Master 可以利用 Group_Id 同時 access 多個同群組的 Slave
 - 接下來 Master 會重複上面三個步驟直到所有 Slave 都賦予新的 Device Number
@@ -30,10 +30,10 @@ Master 在進行正常的數據傳輸前，其辨識和初始化 bus 上的 Devi
 
 ![Alt text](image/figure51.png)
 
-- Group_Id
+- `Group_Id`
     - 1 : Group 1
     - 2 : Group 2
-- Device Number
+- `Device Number`
     - 1 ~ 11 : Bus 上每個 Slave 唯一的 Device Number
     - 12, 13 : 12 代表 Group 1；13 代表 Group 2，讓 Master 可以一次 Acceess 多個同群組的 Slave
     - 14 : 保留給 Master

@@ -13,9 +13,17 @@ Frame 的行數與列數可以自行設定，如 Table 23/24 所示。Frame Row 
 
 ![Table 23](https://github.com/wenyuan0806/soundwire_notebook/assets/133325842/652f3edc-8150-4fcd-8f97-12cd49eee443)
 
+> 例如要將行數設成 16，那麼就要把 `PCP_FrameCtrl` Register 的 `ColumnControl` 欄位設為 7 (binary 111)
+
 ![Table 24-1](https://github.com/wenyuan0806/soundwire_notebook/assets/133325842/0589b33a-0011-4f0e-9b8e-c073cfde0062)
 
 ![Table 24-2](https://github.com/wenyuan0806/soundwire_notebook/assets/133325842/85918b08-834c-4850-a157-e2755fa5f219)
+
+> 例如要將列數設成 256，那麼就要把 `PCP_FrameCtrl` Register 的 `RowControl` 欄位設為 19 (binary 10011)
+
+Figure 64 是 `PCP_FrameCtrl` Register 的欄位：
+
+![image](image/figure64.png)
 
 從上表可以看到，Row 數量共有 23 種設定值、Column 數量共有 8 種設定值，因此排列組合起來共有 `23x8=184` 種不同的 frame shapes；Frame Size 則是從最小 `48 x 2 = 96 (bits)` 到最大 `256 x 16 = 4096 (bits)`。
 
