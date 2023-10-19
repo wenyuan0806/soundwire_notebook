@@ -13,7 +13,7 @@ Peripheral Synchronization 的過程被總結在 Figure 27 的 Peripheral Synchr
 
 另外，從 Figure 27 也會看到還須對設備進行 High-PHY mode 的檢測，Master 會等所有 slave 都具備 High-PHY 功能時，才可以進入 High-PHY mode。
 
-在進入 `Attached_OK` 狀態前，需要先匹配 Static Synchronization，接著再匹配連續 15 個 Frame 的 Dynamic Synchronization 後才可以進入 `Attached_OK` 狀態。倘若在 attached 狀態下**連續兩個 Frame 發生** `Any_Sync_Error` 則會回到 `Unattached` 狀態。
+在進入 `Attached_OK` 狀態前，需要先匹配 Static Synchronization，接著再匹配連續 15 個 Frame 的 Dynamic Synchronization 後才可以進入 `Attached_OK` 狀態。倘若在 attached 狀態下**連續發生兩次 Sync Error** 則會回到 `Unattached` 狀態。
 
 ![Alt text](image/figure27.png)
 
