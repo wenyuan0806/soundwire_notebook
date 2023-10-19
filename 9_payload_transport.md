@@ -74,9 +74,13 @@ Figure 129 是 Payload Transport Window 在相同 Sample Interval 的情況下�
 Payload Data Container
 -------
 
-Payload Data Container 是 **channel 傳輸 data 的基本單位**，`ContainerWordLength` 參數會決定了 Payload Data Container 的長度，如下圖所示，前段會放取樣數據，而後段沒放數據的部分則填充 0，並且是先傳 MSB 再傳 LSB：
+Payload Data Container 是 **channel 傳輸 audio sample 的最小單位**，`WordLength` 參數會決定了 Payload Data Container 的長度，如下圖所示，前段會放取樣數據，而後段沒放數據的部分則填充 0，並且是先傳 MSB 再傳 LSB：
 
 ![Alt text](image/payload_data_container.png)
+
+Address 0x0003 `DPx_BlockCtrl1` 內的 `WordLength` 參數可以設定 Payload Data Container 的長度，範圍是 1~64，如下 Figure 87：
+
+![Alt text](image/figure87.png)
 
 > 每個 Payload Data Container 都對應了一個 channel。
 
