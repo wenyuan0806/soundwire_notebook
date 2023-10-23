@@ -17,7 +17,8 @@ Content
 5. [System Control](https://github.com/wenyuan0806/soundwire_notebook/blob/main/5_system_control.md)
     - 講述裝置列舉、Reset，以及 Clock 的產生、Pause、Stop
 6. [Commands](https://github.com/wenyuan0806/soundwire_notebook/blob/main/6_commands.md)
+    - 講述 Bank Switching, SSPs, MBQs
 7. [Registers](https://github.com/wenyuan0806/soundwire_notebook/blob/main/7_registers.md)
-8. Interrupts
+8. [Interrupts](https://github.com/wenyuan0806/soundwire_notebook/blob/main/8_interrupts.md)
 9. [Payload Transport](https://github.com/wenyuan0806/soundwire_notebook/blob/main/9_payload_transport.md)
-10. Bulk Payload Transport Protocol (BPT)
+10. [Bulk Payload Transport Protocol (BPT)](https://github.com/wenyuan0806/soundwire_notebook/blob/main/10_bulk_payload_transport_protocol.md)
