@@ -38,3 +38,14 @@ How to Paging Register
 ![Alt text](image/paging-register.png)
 
 ![Alt text](image/table78.png)
+
+Dual-Ranked Registers
+-------
+
+為了可以先準備好所有暫存器，全部設定完後再一起 Update，因而定義了 Dual-Ranked Registers，而 Dual-Ranked Registers 是定義在 SDCA Spec。
+
+這個機制跟 Banked Register 是不一樣的，Banked Register 是目的是維護兩套完整的值，然後透過切換 Bank 來瞬間套用不同的 Payload Transport 設定。而 Dual-Ranked Register 通常用在需要同時更新的 Audio Controls Sets (例如濾波器中的幾個參數，或兩個不同放大器中的 Gain)。
+
+Dual-Ranked Register 裡面有 Device 目前運作的 Current Value Register (CVR) 和之後欲切換的 Next Value Register (NVR)。可以用 Commit Operation 把值從 NVR 複製到 CVR，要注意複製過去後 NVR 的值並不會被砍掉。
+
+![Alt text](image/figure42.png)
