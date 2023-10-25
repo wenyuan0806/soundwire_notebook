@@ -251,3 +251,158 @@ Control Access Mode 有以下六種模式：
 
 > 也可以在 Control Selector 裡面加入自己定義的 Control。
 
+Resets
+-------
+
+#### SDCA_Reset ####
+
+Peripheral Device 在 SDCA parts 的 Reset 就叫 SDCA_Reset。
+
+- 當發生以下事件時會激活 SDCA_Reset：
+    - Hard Reset
+    - Severe Reset
+    - (Optional) `Function_Action` Control
+        - 每個 SDCA Functions 會有 `Function_Action` Control，可以用來啟動  SDCA_Reset 來 reset 單一個 Function，而不影響到其他 Functions
+
+#### Soft Reset ####
+
+就是 SoundWire Spec 裡面講的 Soft Reset。
+
+Soft Reset 會暫停 DP 的 audio streams，Designer 可以自定義 Soft Reset 時對應的動作，例如修改 Amp Output 來避免 pop 聲或保護 Amp 之類的。
+
+#### Resets in Function_Status Control ####
+
+每個 Function 都有 `Function_Status` Control，用於向 Software 報告各種事件(例如 reset 非同步的發生了)，不是 Software 寫入 Controls 的直接結果。
+
+#### Effects of Reset ####
+
+SDCA_Reset 將大多數的 Controls 變更為 Default 狀態（可以從 DisCo data 看到），包括變更 Power Domain Entity (PDE) 中的 Power State Control。
+
+SDCA_Reset 對 memory 的內容應不會有影響，但由於 Entity 的 Effective Power State 會被變更為 PS3，所以 memory 的內容可能會遺失。
+
+Host Agent Software
+-------
+
+可以理解成 Driver，或是 Host 這邊相關硬體的 Firmware 都算是 Host Agent。
+
+其它章節會用其它術語更具體的表示其 Host Agent 的功能：
+
+- `Class Software`
+    - 跟 Device 互動的軟體
+- `Function Agent`
+    - 用來執行 Device Function 某些行為的軟體（Figure 30）
+    - 例如，Host DSP 處理數據以提高音訊保真度，或將 PDM Stream 轉換為 PCM Stream
+
+![Alt text](image/figure30.png)
+
+#### Extension Driver ####
+
+Host Software 架構可以自定義，但通常會包含一個 Class Driver 用來 loading Extension Drivers。
+
+而 Extension Driver 不限於只能訪問 XUs，也可訪問任意 Entities 的 Controls、以及 Entities 以外的東西 (例如 Device Address Map 自定義的 Registers)。
+
+#### Initialization Writes ####
+
+Device 的 Disco data 包含的 `Function Initialization Table` 描述了 Initialization Writes 的順序。該 table 是一個 32-bit address 對 8-bit data 的列表。
+
+Device Function 如果需要做 Initialization Writes，它可以在 Entity0:`Function_Status` Control 中設定 `Function_Needs_Initialization` bit；在 Host 執行完 Initialization Writes 後，Host Agent 就會清掉 `Function_Needs_Initialization` bit。
+
+Initialization Writes 使用的是 **flat addressing** 而不是 structured SDCA addressing (Function, Entity, Function Selector, etc.)，因為它可以存取 Disco 裡面沒有宣告的 Controls、以及 Device Address Map 自定義的 Registers。
+
+#### Class Software Initialization and Default Values ####
+
+Controls 的起始值會被以下事件影響：
+
+- Resets
+- Initialization Writes
+- Class Software Initialization
+- Class Software Resotring User State
+
+Class Software 初始化 Device 後，每個 Control 中的值通常優先順序為：
+
+1. A value chosen by the user or OS.
+2. A value chosen by the Class Software.
+3. A platform-specific Default Value that the OEM specified in a DisCo Property.
+4. A specification-defined hardware reset value. (Known from this Specification, and might be Function-specific or Entity-specific.)
+5. An implementation-defined hardware reset value. (Chosen by the hardware manufacturer.)
+6. A known existing value. (Persisting from before this initialization.)
+7. An unknown / unpredictable value, which might be different from what was there earlier.
+
+有些 Controls 會有 DisCo Property `mipi-sdca-control-default-value` (or `mipi-sdca-control-cn-<n>-default-value`)
+
+#### Outline of Software Flow for Stream Start and Stop ####
+
+Figure 17 是 Host Software Framwwork 控制 audio stream 以支援系統省電的範例。
+
+- Stream Controls at Class Level：
+    - Stream Create / Destroy
+    - Stream Start
+    - Stream Pause / Resume
+    - Enter Low Power
+
+- Stream Controls at Bus Controller Level：
+    - Start Bus
+    - Clock Start / Stop 
+    - Idle Timeout
+
+完整的 Bus Controller 框架還會把多個 Clients 的 request merge 起來，並且採用更高級別的 Power State (如果有需要的話)。
+
+![Alt text](image/figure17.png)
+
+Bus Interfaces
+-------
+
+#### SoundWire ####
+
+SDCA 使用的是 SoundWire Interface，有兩個 Blocks 的 address map 是分配給 SDCA 使用的
+
+- 64 MB for Controls
+    - 用於 Control 的 Hirarchical Address
+        - 3-bit for Function, 7-bit for Entity ID ... 等
+- 64 MB for Memories
+    - Address 的分配可以自定義
+
+此外，Device 可能還會有其它的 memory 或 registers，而他們使用的是 SoundWire Address Map 中的自定義區域。
+
+有些 Controls 會使用 MBQ (in SoundWire Spec)；有些 Controls 會使用 Dual-Ranked Register (in SoundWire Spec)。
+
+SoundWire Peripheral Control Port 分配了 31 個 interrupts 給 SDCA (`IntStat`, `IntClear`, `IntMask`)。
+
+UMP (Universal Message Passing)
+-------
+
+UMP 用來做數據交換。
+
+- **Application to Any Function**
+    - File download for Device-resident firmware in XUs
+    - Algorithm Extension in MFPUs
+- **Specific to Particular Functions**
+    - 將 SMPUs (SmartMic) 的 history buffer 內的 audio samples 上傳
+    - SAPUs (SmartAmp) 之間做 Device-to-Device 的訊息傳遞，用來做 synchronization protection behavior
+    - SMPUs (SmartMic) 之間做 Device-to-Device 的訊息傳遞，用來做 synchronization triggers
+    - 傳送 HID Report，用來做控制使用 (例如調整音量等)
+
+#### Summary of UMP ####
+
+透過在 Device 和 Host 之間傳遞共享的 device memory area 的所有權來傳輸 `Message`，而每個 `Message` 都是一個或多個 byte block(s) 組成。DisCo Properties 有定義了 Device Address Space 的區域，稱為 `buffer`。
+
+每個 UMP 都有以下三個 standard Controls:
+
+- `CurrentOwner`
+    - 會指示哪個 Host or Device 擁有 message memory 的所有權
+    - Host Software 可以啟用 interrupt 來轉移所有權
+- `MessageOffset`
+    - 指示 `Message` 的位置是在 `Buffer` 的哪裡
+- `MessageLength`
+    - 指示要傳遞的 `Message` 的長度
+
+Host 會使用 Read/Write Operation 來存取 `buffer`，甚至是用 BRA 來存取也可以。
+
+> 一個 UMP 只能單方向傳遞 `Message`，要雙向的話就要兩個 UMPs。
+
+#### UMP Clients ####
+
+Device Function 用來做 UMP 通訊的部分就稱為 **UMP Clients**。
+
+Device Function 也可以請求 Host 用 UMP 傳遞一些 Messages，例如請求 Firmware Download (`FDL_UMP` in XU)、或是請求 Algorithm Extension Data (`AE_UMP` in MFPU) ... 等。
+
