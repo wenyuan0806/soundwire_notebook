@@ -28,7 +28,7 @@ SDCA 沒有強制規範軟體架構，但它通常會有很典型的 Function, D
 
 ![Alt text](image/figure5.png)
 
-Function
+Function Topology
 -------
 
 Figure 8 為 Function Topology：
@@ -111,3 +111,143 @@ RJ Function 可以支援外部的 Speakers, Headphones, Microphones 接上一組
 #### Human Interface Device (HID) ####
 
 HID Function 在 SDCA HID Entity 中使用 UMP 來跟 Host 傳送或接收 HID Reports，可以用來實現在 Audio Device 上做 Volumn Up/Down。
+
+Entities
+-------
+
+Entities 根據功能做分類，又可以分成以下幾種：
+
+- Terminals
+- Units
+- Clock Entities
+- Other Entities
+
+#### Terminals ####
+
+- `Input Terminal (IT)`
+    - Signal 輸入至 Function
+- `Output Terminal (OT)`
+    - Signal 從 Function 輸出
+
+![Alt text](image/figure11.png)
+
+#### Units ####
+
+- `Channel Remapping Unit (CRU)`
+    - 用來執行 Channel Mapping，每個 Output Channel 都是一個 Input Channel 的副本
+- `Feature Unit (FU)`
+    - 用於單獨處理每個 Channel
+    - 例如調整音量、將某個 Channel 靜音
+- `Multi-Function Processing Unit (MFPU)`
+    - 使用 Processing Algorithms 對 Input Signal(s) 進行運算
+- `Mixer Unit (MU)`
+    - 將兩個以上的 Input Signals 混在一起後輸出
+- `Posture Processing Unit (PPU)`
+    - 讓設備以相對於使用者的方向變化來修改訊號
+    - 例如平板轉向、筆電闔上
+- `Smart Amp Processing Unit (SAPU)`
+    - 使用相關的 Protection Function 來保護 Speaker 不損壞
+- `Smart Mic Processing Unit (SMPU)`
+    - 用來辨識特定聲音以觸發特定功能、在 clock stop 時去 buffer 住收到的音訊
+- `Selector Unit (SU)`
+    - 從多個 Input Signals 中選擇一個輸出
+- `Up Down Mixer Processing Unit (UDMPU)`
+    - 將預先定義好的 Mix 功能應用於一個或多個 Input Signal(s)
+    - 例如，矩陣解碼可產生 5.1 Output，或將多個 Transducers 的通道組合成多通道的 reference stream
+- `eXtension Unit (XU)`
+    - 將自定義的 processing 方式應用在 Input Signal 上
+    - XU 還提供 Download File（例如 Firemware），可以使用 UMP 來執行
+
+![Alt text](image/figure12.png)
+
+#### Clock Entities ####
+
+Clock Entities 可以提供 Audio Function 內 Sample Clock 的控制及狀態。
+
+- `Clock Source (CS)`
+    - Sample Clock Source，可以從 SoundWire bus clock 除頻得來、或是來自內部 PLL or 振盪器等
+- `Clock Selector (CX)`
+    - 用來切換 Sample Clock Source
+
+![Alt text](image/figure13.png)
+
+#### Other Entities ####
+
+- Group Entity (GE)
+- Human Interface Device Entity (HIDE)
+- Power Domain Entity (PDE)
+- Security & Privacy Entity (SPE)
+- Tone Generator (TG)
+
+![Alt text](image/figure14.png)
+
+Controls
+-------
+
+用來描述 Host Softwawre 如何改變 Peripheral Device 的 Function 行為。
+
+#### Addressing Control ####
+
+Host 會用 `Hierarchical Address` 來 acceess Control，該位址裡包含了
+- `Function Number`
+- `Entity ID`
+    - `Entity ID (0)` 被用來定址 Function-Level Controls (例如做 reset Function 或判斷現在是否 busy 等操作)。
+- `Control Selector`
+    - 1-byte Control
+    - 用 MBQ 做 multi-byte Control
+    - 用 Control Number 來做 multi-byte Control (一個 byte 一個 byte 存取)
+    - 由 Control Number 標識的一組 Control (例如 signal 中的每個 Channel 都有 1 個 Control) 這些 Control 可以是 1-byte 也可以是 MBQ
+- `Control Number` (Optional)
+    - 取決於 Control Selector 選擇的 Control 需不需要 Control Number
+
+#### Access Mode ####
+
+Control Access Mode 有以下六種模式：
+
+- RW
+    - Read/Write
+- Dual
+    - Dual-Ranked Read/Write
+- RW1C
+    - Read/Write with Write-1-to-Clear
+- RW1S
+    - Read/Write with Write-1-to-Set
+- RO
+    - Read Only
+- DC
+    - DisCo Contant
+    - Peripheral Device Hardware 裡沒有這個 Control，但 Software 可以用這個 Control 從 DisCo Data 中讀出常數值
+
+#### Access Layer ####
+
+每個 Control 的 DisCo Properties 都包含了 Access Layer，可以用來指示預計哪些 Software Layers 或哪些 Layers 可以存取這個 Control。
+
+- `User`
+    - 直接從 user input 推導出來的
+    - 例如 system-level volumn Control
+- `Application`
+    - 從 Class Software 上面的 application software 推導出來的
+    - 例如一個 conferencing application
+- `Class`
+    - 在 Class Software 中算出來的
+- `Platform`
+    - 由 OEM / System Vendor 決定
+- `Device`
+    - 由 Device Function 自己控制
+- `Extension`
+    - 由 Extension Software 控制
+
+#### Deferred Access to Controls ####
+
+有一些 Controls 會很花時間，例如我們寫了某個 Control 後需要等待 DSP 做訊號處理的結果，因此有一個 Function_Status Control 裡面有一個 busy bit 來指示 Control 做完了沒。如果 busy bit 還沒放下來，那麼 Host 就先不要做其他的 Control Access。
+
+下圖是 Function_Status Control bit 7 (busy bit) 的介紹：
+
+![Alt text](image/busybit.png)
+
+#### Interrupt from Controls ####
+
+有些 Controls 會發 interrupt 告知 Host Software，Function 自己修改了 Control 的值。
+
+> 也可以在 Control Selector 裡面加入自己定義的 Control。
+

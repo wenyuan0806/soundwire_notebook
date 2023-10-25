@@ -32,4 +32,6 @@ SDCA v0.9 Notebook
 
 #### Content ####
 
-1. [Overview]()
+1. [Overview](https://github.com/wenyuan0806/soundwire_notebook/blob/main/SDCA/1_overview.md)
+    - 快速導覽 SDCA 規格書的概略內容
+2. [SDCA Functions]()
