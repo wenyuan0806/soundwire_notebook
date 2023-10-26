@@ -136,6 +136,80 @@ Selector Unit (SU)
 
 Figure 87 為 SU 的符號表示：
 
+- Class Selector
+- Device Selector
+
 ![Alt text](image/figure87.png)
 
 ![Alt text](image/table128.png)
+
+Selector Unit 做的事就是從幾個 Input Pins 中選擇一個做為 Output Pin 輸出，中間不會做其它訊號處理。
+
+#### SU: Controls ####
+
+Table 129 是 Class SU 的 Controls 列表：
+
+![Alt text](image/table129.png)
+
+Table 130 是 Device SU 的 Controls 列表：
+
+![Alt text](image/table130.png)
+
+#### SU: Controls with Reset Values ####
+
+在發生 SDCA_Reset 後，SU Controls 的預設值列表如 Table 131：
+
+![Alt text](image/table131.png)
+
+#### SU: Interrupt Sources ####
+
+SU 沒有任何 Standardized Interrupt Sources，其行為由 Standard Class Software 來處裡。
+
+Group Entity (GE)
+-------
+
+Figure 92 用 SDCA Audio Function Topology 來說明 GE：
+
+![Alt text](image/figure92.png)
+
+- GE 是一種捷徑機制，允許 Host Software 透過單一個 Control `Selected_Mode`，對 Audio Function 進行一組相關的變更
+- 當軟體寫入新的 Mode 到 `Selected_Mode` 時，Audio Function 中的多個 Control 和多個 Entity 就可以同時被更新
+
+DisCo 屬性定義了哪些 Control 和 Entity 會被 GE 的 Selected_Mode Control 所改變。Audio Function Topology 中，任何可能受到 GE 影響的 Entity（例如 Selector Unit）都會用橘色背景和紅色虛線框來標示。
+
+#### Device Behavior for Jack Insertion ####
+
+當 Jack 插入時，
+
+1. Device Function 要執行自定義的 detection algorithm 來判斷插進來的東西是啥
+    - 在執行 detection algorithm 時，Device Function 可能會暫時把 `GE:Detected_Mode` Control 設為 2 (代表 `Detection_in_Progress`)
+2. 接下來 Device Function 要再把 `GE:Detected_Mode` Control 設定成一個非 0 or 2 的值
+    - 如果 `Selected_Mode` 目前的值無法安全的用於剛偵測到的 peripheral，則 Device Function 應該把 `Selected_Mode` 變更為與 peripheral 相容的值
+    - 當 `Detected_Mode` 是已知的 peripheral 時（Mode 3 ~ N），則 Device Function 應該會把 `Selected_Mode` 變更為與 `Detected_Mode` 相同的值
+3. 最後將 `IntStat_NN` 位元設為 1 (`NN` 是分配給 GE:Detected_Mode Control 的 interrupt number)
+    - 如果對應的 `IntEnable_NN` 位元為 1，則會在 Ping Command 中報告此 interrupt 狀態
+
+> Function Agent 也可能會協助 Device Function 做 detection algorithm
+
+#### Class Software Behavior for Jack Insertion ####
+
+當 Class Software 看到 `GE:Detected_Mode` Control 改變時 (可能是透過 polling 或 interface 看到的)，它必須執行以下至少一項：
+
+1. 若新的 `GE:Detected_Mode` value 是一個已知的 peripheral (value 不是 1)，則會把這個 value 寫到 `GE:Selected_Mode` Control
+    - 與 `GE:Detected_Mode` 的值相同
+    - 該值不能是 1 或 2
+2. 如果新的 `GE:Detected_Mode` 值為 Jack_Unknown（Mode 1），則會寫入 `GE:Selected_Mode` Control 以選取非 1 或非 2 的 Mode value
+3. 如果新的 `GE:Detected_Mode` value 為 `Detection_in_Progress`，則不會更新 `GE:Selected_Mode` Control value
+
+> 一個 GE:Detected_Mode 的變更可能會導致 Host 重新評估其他 GE:Selected_Mode 的決策
+
+#### Class Software Prioritization Behavior with two Jacks ####
+
+可以參考 Table 149, 150, 151, 152
+
+Table 153 為 Detected_Mode 與 Selected_Mode 各種 Mode 下的解釋：
+
+![Alt text](image/table153.png)
+
+
+
