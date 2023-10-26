@@ -34,4 +34,7 @@ SDCA v0.9 Notebook
 
 1. [Overview](https://github.com/wenyuan0806/soundwire_notebook/blob/main/SDCA/1_overview.md)
     - 快速導覽 SDCA 規格書的概略內容
-2. [SDCA Functions]()
+2. [SDCA Functions](https://github.com/wenyuan0806/soundwire_notebook/blob/main/SDCA/2_sdca_functions.md)
+    - SDCA Functions 是個抽象概念，用來描述怎麼看到 Device 的 internal signal path 並加以控制
+3. [Using SDCA with SoundWire]()
+    - 描述 SoundWire 如何用 SDCA 來傳輸 audio payload data 和 control information。
