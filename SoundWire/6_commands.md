@@ -54,6 +54,15 @@ SSP interval 的大小為所有目前正在使用之 sample interval 的最小�
 
 SSP 一般出現在 Frame 的邊界。例如上一個 Frame 結束時 (BitSlot[MaxRol, MaxCol]) 或下一個 Frame 開始時 (BitSlot[0, 0])。
 
+> 當系統中有一個或多個 DP 從 Channel 傳輸 payload stream 時，manager 應僅在與前一個 SSP 相隔 payload data interval 之倍數 Point 處來指示 SSP
+
+#### Generating SSPs in Systems with Peripheral to Peripheral Payload Transport ####
+
+在 peripheral-to-peripheral payload transport stream 的系統中，manager 無法通過其自身的 DP 直接看到 Sample Interval，它可能會通過以下方式來指示 SSP 的正確相位：
+- 在 manager 中配置一個 DP 來傳輸 **“dummy”** payload data，其 sample interval 是這些外部 sample interval（peripheral-to-peripheral）的整數倍，以此將與它們保持相位同步
+- 使用與外部 sample interval 之整數倍的 frame interval（因為指示 SSP 事件的機制都與 frame 的邊界對齊）
+- Manager 所在的 component 內的其他內部自定義的周期事件，這些事件將與這些外部 sample interval 保持相位同步
+
 Atomic Access Mechanism for Multi-Byte Quantities (MBQs)
 -------
 

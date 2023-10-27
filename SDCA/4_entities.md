@@ -177,6 +177,8 @@ Figure 92 用 SDCA Audio Function Topology 來說明 GE：
 
 DisCo 屬性定義了哪些 Control 和 Entity 會被 GE 的 Selected_Mode Control 所改變。Audio Function Topology 中，任何可能受到 GE 影響的 Entity（例如 Selector Unit）都會用橘色背景和紅色虛線框來標示。
 
+### GE: Behavior for Selecting Jacks in UAJ and RJ Functions ###
+
 #### Device Behavior for Jack Insertion ####
 
 當 Jack 插入時，
@@ -211,5 +213,57 @@ Table 153 為 Detected_Mode 與 Selected_Mode 各種 Mode 下的解釋：
 
 ![Alt text](image/table153.png)
 
+#### Device Behavior for Jack Removal ####
 
+當拔除 Jacks 時，Device Function 需要做以下事：
 
+1. 把 `GE:Detected_Mode` Control 設為 0 (Jack_Unplugged)
+2. 把 `GE:Selected_Mode` Control 設為 0 (Safe_Mode)
+3. 把 `IntStat_NN` bit 設為 1 (NN 就是分配給 GE:Detected_Mode Control 的 interrupt number)
+    - 如果對應的 IntEnable_NN bit 也被設為 1 的話，那麼 Device 就會在 Ping Command 拉 Alert Status
+
+#### Class Software Behavior for Jack Removal ####
+
+當 Class Software 看到 `GE:Detected_Mode` value 改變時 (可能是透過 polling 或 interrupt 看到的)，如果新的 `GE:Detected_Mode` value 為 0，那麼 Class Software 需要把 `GE:Selected_Mode` 設為 0 (Safe_Mode)。
+
+> Class Software 只要看到 `GE:Detected_Mode` 變了，就會去重新決策 `GE:Selected_Mode` 的值。
+
+#### Multiple ITs for a Single Physical Jack ####
+
+在 UJ 和 RJ 的 SDCA Audio Function Topology 中，有一個 GE 包含實體插孔以及與不同行為模式相關的多個 IT 和/或 OT，`GE:Selected_Mode` Control 會影響 Selector Unit 去選擇某一組 IT 或 OT。
+
+#### Software Access to Controls that are Affected by a GE ####
+
+會有 DisCo `mipi-sdca-control-access-layer` Property 來指示 Software 不要去 Update 哪種 Control (User, Application, Class, Platform, Extension, Implementation-Defined)。如果 Software 還是去 update 它，那麼 `GE:Selected_Mode` Control 就會被設為 2。
+
+#### GE: Controls ####
+
+Figure 154 是 GE in the `UAJ` and `RJ` Functions 的 Control List。
+
+![Alt text](image/figure154.png)
+
+#### GE: Controls with Reset Values ####
+
+SDCA_Reset 後的設定值如下：
+
+![Alt text](image/table155.png)
+
+#### GE: DisCo Properties ####
+
+GE 專屬的 DisCo Properties 如下：
+
+![Alt text](image/table156.png)
+
+#### GE: Interrupt Sources ####
+
+GE 的 Standardized Interrupt sources 如下：
+
+![Alt text](image/table157.png)
+
+#### GE: Behavior of Device Class Software ####
+
+Software 會使用 interrupt 來偵測 Detected_Mode Control 何時會因 Jack 的插入/拔出而發生變化。
+
+當觸發 `Detected_Mode` interrupt 時會做以下事：
+
+1. 
