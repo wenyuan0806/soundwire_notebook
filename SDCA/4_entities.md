@@ -1,6 +1,123 @@
 Entities
 =======
 
+Input Terminal (IT)
+-------
+
+Figure 73 是 IT 的拓樸符號：
+
+![Alt text](image/figure73.png)
+
+> 進入 IT 的 signal 可以是 analog 也可以是 digital
+
+- **Streaming ITs** : Sink Data Port 餵進來 IT 的類型
+- **Transducer ITs** : 非 Sink Data Port 餵進來 IT 的類型
+- **Security-Privacy ITs** : security- and/or privacy-related inputs 餵進來 IT 的類型
+
+#### IT: Controls ####
+
+Table 64 是 Streaming IT 的 Controls
+
+![Alt text](image/table64.png)
+
+Table 65 是 Transducer IT 的 Controls
+
+![Alt text](image/table65.png)
+
+> Device 不可以同時使用 MIC_Bias 0x03.NCN[0] 和 0x03.NCN[1-n]
+
+Table 66 是 NDAI IT 的 Controls
+
+![Alt text](image/table66.png)
+
+Table 67 是 Privacy IT 的 Controls
+
+![Alt text](image/table67.png)
+
+#### ClusterIndex Control in an IT ####
+
+IT 中的 `ClusterIndex` Control 用於選擇要讓哪個 Cluster 輸入到 Audio Function Topology。
+
+- **For a Streaming IT **: Class Software 會設定 `ClusterIndex` 來選擇有多少個 Channels，以及在 Sink DP 中 enable 了哪些 Channel
+- **For a Transducer IT** : Class Software 會設定 `ClusterIndex` 來選擇有多少個 Channels 要餵到 Audio Function Topology，並且可能會影響外部行為 (例如有多少麥克風接收偏壓)
+
+#### Setting the MIC_Bias Control in an IT ####
+
+IT:`MIC_Bias` Control 通常由下列任一項來 Update :
+
+- 在 reset 後由 Class Software 來寫一個預設的固定值
+- An Extension Software Agent
+- A Group Entity (GE)
+
+#### IT: Controls with Reset Values ####
+
+SDCA_Reset 後的值如下表：
+
+![Alt text](image/table68.png)
+
+> Table 68 的 reset value 都需要自定義。
+
+#### IT: DisCo Properties ####
+
+下表是 IT 專用的 DisCo Properties 列表：
+
+![Alt text](image/table69.png)
+
+#### IT: Interrupt Sources ####
+
+IT 沒有任何 Standardized Interrupt Sources，其行為由 Standard Class Software 處理。
+
+> IT 也可以自定義中斷來源。
+
+Output Terminal (OT)
+-------
+
+Figure 74 是 OT 的拓樸符號：
+
+![Alt text](image/figure74.png)
+
+> 輸出 OT 的 signal 可以是 analog 也可以是 digital
+
+- **Streaming OTs** : 輸出到 Sink Data Port
+- **Transducer OTs** : 輸出到 External Transducer
+- **Security-Privacy OTs** : 輸出 security- and/or privacy-related output
+
+#### OT: Controls ####
+
+Table 71 為 Streaming OT Controls List
+
+![Alt text](image/talbe71.png)
+
+Table 72 為 Transducer OT Controls List
+
+![Alt text](image/table72.png)
+
+Table 73 為 NDAI OT Controls List
+
+![Alt text](image/table73.png)
+
+Table 74 為 Privacy OT Controls List
+
+![Alt text](image/table74.png)
+
+#### OT: Controls with Reset Values ####
+
+OT Controls 在 SDCA_Reset 後的值如下：
+
+![Alt text](image/table75.png)
+
+#### OT: DisCo Properties ####
+
+下表是 OT 專用的 DisCo Properties
+
+![Alt text](image/table76.png)
+
+#### OT: Interrupt Sources ####
+
+OT 沒有任何 Standardized Interrupt Sources，其行為由 Standard Class Software 處理。
+
+> OT 可以自定義中斷來源
+
 Feature Unit (FU)
 -------
 
@@ -262,8 +379,197 @@ GE 的 Standardized Interrupt sources 如下：
 
 #### GE: Behavior of Device Class Software ####
 
-Software 會使用 interrupt 來偵測 Detected_Mode Control 何時會因 Jack 的插入/拔出而發生變化。
+Software 會使用 interrupt 來偵測 `Detected_Mode` Control 何時會因 Jack 的插入/拔出而發生變化。
 
 當觸發 `Detected_Mode` interrupt 時會做以下事：
 
-1. 
+1. 若新的 `Detected_Mode` 值不是 `Jack_Unplugged` 或 `Jack_Unknown` 時，則 Software
+    - A. 應該要給 Extension Driver 或 user 選擇 `Selected_Mode` 的機會
+2. 若新的 `Detected_Mode` 為 `Jack_Unknown` 時，則
+    - A. 首先要預設一個 platform-specific 的 default Mode（例如，因為僅實現了該 Audio Function 中的某些替代的 ITs 或 OTs 集合），然後：
+    - B. 應該要給 Extension Driver 或 user 選擇 `Selected_Mode` 的機會，然後：
+    - C. 要使用步驟 2A 和 2B 產生的 Mode 來更新 `Selected_Mode` control
+3. 若新的 `Detected_Mode` 為 `Jack_Unplugged` 時，則 Software 不應該修改 `Selected_Mode`
+
+#### Mode Values in GEs ####
+
+- 每個 GE 的 DisCo Properties 會描述與每個 instances 特定的一組 Mode Numbers
+- 對於每種 Mode，DisCo information 定義了一組值，當 Mode Numbers 寫入 `Selected_Mode` 時，這些值會出現在 Audio Function 內的一個或多個 Enitities 的一個或多個 Controls 中
+- 將值寫入 `Selected_Mode` 實際上是一種捷徑，它取代了需執行一組寫入操作的 Host Software，並確保所有寫入操作同時發生
+- 同一組 Mode Numbers 用於 `Detected_Mode` 和 `Selected_Mode` (unknown detected Peripheral 的特殊值除外)
+
+Clock Source (CS)
+-------
+
+下圖是 CS 的拓樸圖：
+
+![Alt text](image/figure90.png)
+
+#### CS: Behavior ####
+
+CS 用在 Audio Function Topology 中提供訊號的 Sample Rate。
+
+CS 有以下兩種用途：
+
+- **CS for Streaming IT & OT** : 提供 Sample Rate 給 Data Port (Table 141)
+- **CS for Transducer IT** : 提供可選擇的 clock source 給 Transducer (Table 142)
+    - Transducer 有可能是麥克風等其它收音傳感器
+
+![Alt text](image/table141.png)
+
+![Alt text](image/table142.png)
+
+#### Rules for Clock Source Attached to a Streaming IT and OT ####
+
+1. 當 `mipi-sdca-cs-type` 為 2 (internal
+synchronizable) 或 3 (internal for source-synchronous) 時 (參考 Table 143)，就要使用 CS:`Clock_Valid` Control
+2. Host 要先等待 CS:`Clock_Valid` 變成 1 後才可以 enable Clock Source (`Clock_Valid` control) 連接到 Streaming Terminal (for DP Channel)
+
+#### CS: DisCo Properties ####
+
+下表是 CS 5專用的 DisCo Properties：
+
+![Alt text](image/table143.png)
+
+#### CS: Interrupt Sources ####
+
+下表是 CS Entity 的 Standardized Interrupt Sources (也可以自定義自己的中斷)，當 `Clock_Valid` 從 `0` 變 `1` 時就觸發中斷。
+
+![Alt text](image/table144.png)
+
+#### CS: Examples of Commonly Used Sample Rates ####
+
+下表是 SDCA Functions 常用的 Sample Rates：
+
+![Alt text](image/table145.png)
+
+Clock Selector (CX)
+-------
+
+下圖是 CX 的拓樸符號：
+
+![Alt text](image/figure91.png)
+
+#### CX: Behavior ####
+
+CX 會從輸入的兩個 input pins 中選擇其中一個當成 clock signal 輸出。
+
+#### CX: Input & Output Pins ####
+
+CX 會有兩個 clock input pins 和一個 clock output pin。
+
+![Alt text](image/table146.png)
+
+#### CX: Controls ####
+
+下表列出了 CX 有哪些 Controls：
+
+![Alt text](image/table147.png)
+
+#### CX: Controls with Reset Values ####
+
+在 SDCA_Reset 後，CX Controls 的值會如下表：
+
+![Alt text](image/table148.png)
+
+#### CX: Interrupt Sources ####
+
+**CX 沒有任何 Standardized Interrupt Sources**，其行為由 Standard Class Software 來處理。
+
+Power Domain Entity (PDE)
+-------
+
+Figure 93 是 PDE 的拓樸符號：
+
+![Alt text](image/figure93.png)
+
+PDE 是 Host Software 用來控制 Device power saving 的機制。
+
+Software 會透過 `Requested_PS` Control 來更改 Device Power State，而再過一段自定義的 delay time 後，這項更改也會套用到 `Actual_PS`。
+
+> Requested_PS / Actual_PS 可以參考 Section 7.14.4 / 7.12.3
+
+PDE 的 DisCo Property `mipi-sdca-powerdomain-driven-list` 清單列出了所有的 PDE Entity ID。
+
+#### Rules for PDEs ####
+
+1. Device Function 可以將 PDE 的 `Actual_PS` Control 的效果丟給 Audio Function 內的其他 Entities，沿著從 Transducer ITs 的 signal path 向前（或者從 Transducer OTs 的 signal path 向後）
+2. Device Function 可以將 PDE 的 `Actual_PS` Control 的效果丟給 Audio Function 內的其他 Entities，這些 Entities 與不直接位於來自 Transducer ITs 或 OTs 的 signal path 上的 ancillary Streams 相關
+3. Host Software 應假設 PDE 已影響了給定的 signal path 內的所有 Entities，根據 Rule＃1
+4. Entities 的有效電源狀態是
+    - A. 在 DisCo Property `mipi-sdca-powerdomain-managed-list` 中列出該實體的 PDE 中 `Actual_PS` 的值，或是
+    - B. 所有根據 Rule＃1 或 Rule＃2 傳播 `Actual_PS` 的 PDE 中 `Actual_PS` 控制的最高電源狀態
+
+#### PDE: Controls ####
+
+下表是 PDE 的 Controls：
+
+![Alt text](image/table158.png)
+
+#### PDE: Controls with Reset Values ####
+
+SDCA_Reset 後 PDE Controls Value 如下表：
+
+![Alt text](image/table159.png)
+
+#### PDE: DisCo Properties ####
+
+Table 160 是 PDE 專用的 DisCo Properties
+
+![Alt text](image/table160.png)
+
+#### Subset of Power States that is Supported in a PDE ####
+
+1. Host Software 可以通過檢查每個 PDE 回報的 time delay list 來確定特定 PDE 支援的 Power State
+2. 一般而言，在系統中的每個 component / Audio Function 都有一個用於 active state 的電源狀態（如 PS1/PS0）
+3. 當系統同時支援 PS1 和 PS0 時，DisCo information 將包括 PS1 和 PS0 的轉換
+4. 有一些 Audio Function 有 PS2（在設備上有部分音訊功能，但不透過 DP 進行 Streaming，例如 SmartMic trigger）
+5. 某些 Device Function 的在 PS3 和 PS1/0 之間具有較高的延遲，但支援從 PS2 到 PS1/0 的低延遲 recovery（允許停止 bus clock）
+
+- PS0/PS1 (Active State)
+- PS2 (Local Function)
+- PS3 (Standby)
+
+#### Selecting Unsupported Power States ####
+
+Host Software 應僅要求對 DisCo information 中報告的 Power State 進行變更。如果 PDE:`Requested_PS` 使用了該 PDE 不支援的 Power State，則 `Effective Power State` 或 PDE:`Actual_PS` 不會改變。
+
+#### PDE: Interrupt Sources ####
+
+PDE 不具有任何 Standardized Interrupt Sources。
+
+> PDE 可以自定義中斷來源
+
+#### PDE: Notes on Behavior of Device Class Software ####
+
+Host Software 的典型行為是將任何裝置或目前不活動的裝置的 Power State 降低到較低功耗，具體取決於為該裝置報告的最大延遲。將任何功能中的任意 PDE 的 `Requested_PS` 設定為 PS0 或 PS1 之前，Host 要先把正確的 current value 寫入 Device 的 `PCP_BusClock_Base` 和 `PCP_BusClock_Scale` Register。
+
+當連接到該 bus 的任何 streaming Terminal 的 Effective Power State 為 PS0 或 PS1 時，則 Host 不可以停止 bus block。
+
+Multi-Function Processing Unit (MFPU)
+-------
+
+![Alt text](image/figure80.png)
+
+- 一個 MFPU 可以對信號做一種或多種信號處理演算法，而這些演算法可以自定義
+- `Algorithm_Enable` Control 可以 enable/disable 演算法
+- `Algorithm_Ready` Control 會回報目前可用的演算法，其中一些算法可能需要通過 `Algorithm_Prepare` 的 request 才能用
+
+#### MFPU Types: Null, Fixed-Function, Simple, Full ####
+
+MFPU 又分下面四種型態
+
+- Null MFPU
+- Fixed-Function MFPU
+- Simple MFPU
+- Full MFPU
+
+每個 MFPU Type 都有不同的 Controls。因此，Host Agent 可以透過偵測特定 Control 的存在與否來決定 MFPU Type，如 Table 91 所示：
+
+![Alt text](image/table91.png)
+
+#### Categories of MFPU Algorithm ####
+
+根據 MFPU Type，MFPU 的演算法可分為 1、2 或 4 類中的一類。Table 92 描述了每個演算法類別如何使用 MFPU 的 `Algorithm_*` Control，以及 SDCA_Reset 後這些 Control 的值。RW Level 的 Control 可以由 Host Agent 寫入，但其 reset value 與演算法類別有關。
+
+![Alt text](image/table92.png)

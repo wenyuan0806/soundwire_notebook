@@ -29,16 +29,44 @@ SDCA Functions 是個抽象概念，用來描述怎麼看到 Device 的 internal
 
 - Device Function DisCo Properties 包含了
     - `mipi-sdca-function-topology-features` Property
-        - 他是一個 64-bit bitmask，用於標識該 Function 中有哪些 optional features
+        - 是一個 64-bit bitmask，用於標識該 Function 中有哪些可選的 features
     - `mipi-sdca-entity-id-list` Property
-        - 裡面會標示目前該 SDCA Function 中所有的 Entity IDs
+        - 標示目前該 SDCA Function 中所有的 Entity IDs
     - 由 `mipi-sdca-cluster-id-list` Property 組成的 cluster library
-        - 裡面會列出所有 ClusterIDs (還有描述每個 Cluster 的 subproperties)
+        - 列出所有 ClusterIDs (還有描述每個 Cluster 的 subproperties)
     - 由 `mipi-sdca-behavior-set-id-list` Property 組成的 behavior set library
         - skip...
     - (For Functions that use Opaque Set Controls within UDMPUs) 由 `mipi-sdca-opaqueset-id-list` Property 組成的 opaque set library
-        - 它標識了所有 opaque sets 和 subproperties (用來描述每個 Cluster)
+        - 標識了所有 opaque sets 和 subproperties (用來描述每個 Cluster)
     - (For Functions that use UMP to download Files for AE or FDL) 由 `mipi-sdca-file-set-id-list` Property 組成的 file set library
         - skip...
     - DisCo `mipi-sdca-function-initialization-table` Property 中的 function initialization table
-        - 它描述了 Function Initialization 期間要執行的 byte-writes sequence
+        - 描述了 Function Initialization 期間要執行的 byte-writes sequence
+
+Smart Microphone Function
+-------
+
+#### Smart Mic Function Topology ####
+
+直接看 SDCA Spec Figure 59 SmartMic Function Topology。
+
+- 當 `External_Reference_Input=1`，則 MFPU 13/15/16/17 需要有兩個 input pin
+    - 並且每個這些 MFPU 可能會做 AIR (Acoustic Interference Removal)
+- 當 `External_Reference_Input=0`，則 MFPU 13/15/16/17 只需要一個 input pin
+    - 此時 MFPU 13 可能不用做任何事
+
+Table 62 列出了 Figure 59 中使用的 Entity Types：
+
+![Alt text](image/table62.png)
+
+#### Smart Mic Function Agent Topology ####
+
+Figure 60 是與 SmartMic 相關的 Function Agent Topology：
+
+![Alt text](image/figure60.png)
+
+#### Summary of Smart Mic Function Topology ####
+
+- IT11（Terminal Type：`0x205`，Mic Array Transducer Input）將來自麥克風的 Sample Signal 饋入 SmartMic。麥克風訊號的保真度（包括內部取樣率）會受 IT11：Usage Control 的影響
+- IT111 (Terminal Type：`0x18A`，Streaming Mic Sink DP) 把來自外部 SoundWire Mic 的 optional Signal 饋入 SmartMic，然後跟 CRU111 的 main Signal 混和在一起
+- PPU11 選擇將哪些 mic Channels 饋送到 capture paths 和/或儲存在 SMPU history buffer 中。例如:用來適應終端設備姿勢的變化，像是合上筆電的蓋子、翻轉平板的角度
