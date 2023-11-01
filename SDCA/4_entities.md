@@ -489,7 +489,7 @@ Software 會透過 `Requested_PS` Control 來更改 Device Power State，而再�
 
 > Requested_PS / Actual_PS 可以參考 Section 7.14.4 / 7.12.3
 
-PDE 的 DisCo Property `mipi-sdca-powerdomain-driven-list` 清單列出了所有的 PDE Entity ID。
+PDE 的 DisCo Property `mipi-sdca-powerdomain-managed-list` 清單列出了所有的 PDE Entity ID。
 
 #### Rules for PDEs ####
 
@@ -547,6 +547,29 @@ Host Software 的典型行為是將任何裝置或目前不活動的裝置的 Po
 
 當連接到該 bus 的任何 streaming Terminal 的 Effective Power State 為 PS0 或 PS1 時，則 Host 不可以停止 bus block。
 
+#### Actual_PS Control (in PDE) ####
+
+- Actual_PS Control 是個 8 bits Read-Only Control
+    - 有效值是 0 ~ 4，對應 PS0/1/2/3/4 (Table 196)
+
+![Alt text](image/table196.png)
+
+**Rules for PDEs**
+
+1. 當有個 PDE 被設定成 `Actual_PS`=PS4，則所有由該 PDE 控制的 Entities 都會變 inaccessible
+2. 當 Device 的所有 non-XU-PDEs 被設定成 `Actual_PS`=PS4，則 Device 可以 detach from bus
+3. Host Software 要假設在給定功能中的所有 non-XU-PDEs 均設定成 `Actual_PS`=PS4 後，該功能就會變成 inaccessible，直到 Device 收到 Peripheral Device-Level SDCA_Reset（例如，Bus Reset 或 Device-Level Power-on Event）
+4. 未完待續...
+
+#### Requested_PS Control (in PDE) ####
+
+- `Requested_PS` 支援了 PS0/1/2/3/4 五種 Power State
+- `Requested_PS` Control Values 是個 8 bits integer，範圍是 0 ~ 4 (Table 197)
+- `Requested_PS` 的修改要透過 Host 來寫值
+    - 修改 `Requested_PS` 後最終會傳播到 `Actual_PS`
+
+![Alt text](image/table197.png)
+
 Multi-Function Processing Unit (MFPU)
 -------
 
@@ -574,6 +597,43 @@ MFPU 又分下面四種型態
 根據 MFPU Type，MFPU 的演算法可分為 1、2 或 4 類中的一類。Table 92 描述了每個演算法類別如何使用 MFPU 的 `Algorithm_*` Control，以及 SDCA_Reset 後這些 Control 的值。RW Level 的 Control 可以由 Host Agent 寫入，但其 reset value 與演算法類別有關。
 
 ![Alt text](image/table92.png)
+
+Human Interface Device Entity (HIDE)
+-------
+
+Figure 97 是 HIDE 的拓樸符號：
+
+![Alt text](image/figure97.png)
+
+HIDE 裡面還包含了 UMP blocks 以用來收發 HID Reports。
+
+- 一個 HIDE 必須至少要有以下其中一項：
+    - A. 有 `HIDTx_UMP Producer` 用來發送 Device-to-Host HID Reports (例如按下 headset buttons)
+    - B. 有 `HIDRx_UMP Consumer` 用來接收 Host-to-Device HID Reports (例如指示 LED 燈)
+
+#### HIDE: Controls ####
+
+Table 168 是 HIDE 的 Controls 列表：
+
+![Alt text](image/table168.png)
+
+#### HIDE: DisCo Properties ####
+
+Table 169 是 HIDE 專用的 DisCo Properties：
+
+![Alt text](image/table169.png)
+
+#### HIDE: Interrupt Sources ####
+
+Table 170 是 HIDE 的 Standardized Interrupt Sources：
+
+![Alt text](image/table170.png)
+
+> 也可以自定義 HIDE Interrupt Sources。
+
+#### HIDE: Behavior of Device Class Software ####
+
+Class Software 會對 HIDTx 和 HIDRx 中斷做出反應，從裝置接收 HID 訊息或向裝置發送 HID 訊息。每個來自或發送到 HIDE 的訊息都有一個 Report Type，定義了訊息的格式（HID Report），該格式使用 USB 規格書中定義的報告格式。
 
 Function-Level (Entity0) Controls
 -------
