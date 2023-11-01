@@ -10,9 +10,9 @@ Figure 73 是 IT 的拓樸符號：
 
 > 進入 IT 的 signal 可以是 analog 也可以是 digital
 
-- **Streaming ITs** : Sink Data Port 餵進來 IT 的類型
-- **Transducer ITs** : 非 Sink Data Port 餵進來 IT 的類型
-- **Security-Privacy ITs** : security- and/or privacy-related inputs 餵進來 IT 的類型
+- **Streaming ITs** : 供 Sink DP 餵訊號進來
+- **Transducer ITs** : 供非 Sink DP 餵訊號進來
+- **Security-Privacy ITs** : 供餵 security- and/or privacy-related 訊號進來
 
 #### IT: Controls ####
 
@@ -36,16 +36,16 @@ Table 67 是 Privacy IT 的 Controls
 
 #### ClusterIndex Control in an IT ####
 
-IT 中的 `ClusterIndex` Control 用於選擇要讓哪個 Cluster 輸入到 Audio Function Topology。
+`ClusterIndex` Control 用於選擇要讓哪個 Cluster 輸入進來。
 
-- **For a Streaming IT **: Class Software 會設定 `ClusterIndex` 來選擇有多少個 Channels，以及在 Sink DP 中 enable 了哪些 Channel
-- **For a Transducer IT** : Class Software 會設定 `ClusterIndex` 來選擇有多少個 Channels 要餵到 Audio Function Topology，並且可能會影響外部行為 (例如有多少麥克風接收偏壓)
+- **For a Streaming IT**: Class Software 用 `ClusterIndex` 來選擇有多少個 Channels，以及要在 Sink DP 中 enable 哪些 Channels
+- **For a Transducer IT** : Class Software 用 `ClusterIndex` 來選擇有多少個 Channels 要餵進來，並且可能會影響外部行為 (例如有多少麥克風接收偏壓)
 
 #### Setting the MIC_Bias Control in an IT ####
 
-IT:`MIC_Bias` Control 通常由下列任一項來 Update :
+下面任一項都可能會去設定 IT:`MIC_Bias` Control :
 
-- 在 reset 後由 Class Software 來寫一個預設的固定值
+- 在 reset 後由 Class Software 寫入預設值
 - An Extension Software Agent
 - A Group Entity (GE)
 
@@ -67,7 +67,7 @@ SDCA_Reset 後的值如下表：
 
 IT 沒有任何 Standardized Interrupt Sources，其行為由 Standard Class Software 處理。
 
-> IT 也可以自定義中斷來源。
+> 可以自定義 IT 的中斷來源。
 
 Output Terminal (OT)
 -------
@@ -86,7 +86,7 @@ Figure 74 是 OT 的拓樸符號：
 
 Table 71 為 Streaming OT Controls List
 
-![Alt text](image/talbe71.png)
+![Alt text](image/table71.png)
 
 Table 72 為 Transducer OT Controls List
 
@@ -526,9 +526,10 @@ Table 160 是 PDE 專用的 DisCo Properties
 4. 有一些 Audio Function 有 PS2（在設備上有部分音訊功能，但不透過 DP 進行 Streaming，例如 SmartMic trigger）
 5. 某些 Device Function 的在 PS3 和 PS1/0 之間具有較高的延遲，但支援從 PS2 到 PS1/0 的低延遲 recovery（允許停止 bus clock）
 
-- PS0/PS1 (Active State)
-- PS2 (Local Function)
-- PS3 (Standby)
+- 從最耗電到最省電的 Power State 排序
+    - PS0/PS1 (Active State)
+    - PS2 (Local Function)
+    - PS3 (Standby)
 
 #### Selecting Unsupported Power States ####
 
@@ -573,3 +574,47 @@ MFPU 又分下面四種型態
 根據 MFPU Type，MFPU 的演算法可分為 1、2 或 4 類中的一類。Table 92 描述了每個演算法類別如何使用 MFPU 的 `Algorithm_*` Control，以及 SDCA_Reset 後這些 Control 的值。RW Level 的 Control 可以由 Host Agent 寫入，但其 reset value 與演算法類別有關。
 
 ![Alt text](image/table92.png)
+
+Function-Level (Entity0) Controls
+-------
+
+Entity0 是概念性的 entity，不會畫在 Topology 也不會在 DisCo data 中被描述，然後 Entity0 被用來做整個 Function 相關的控制。
+
+Table 171 是 Entity0 Controls List：
+
+![Alt text](image/table171.png)
+![Alt text](image/table171-2.png)
+
+#### Function-Level (Entity0) DisCo Properties ####
+
+Table 172 列出了應用在 Entity0 的 DisCo Property：
+
+![Alt text](image/table172.png)
+
+#### Function-Level (Entity0): Interrupt Sources ####
+
+Table 173 是 Entity0 的 Standardized Interrupt Sources :
+
+![Alt text](image/table173.png)
+
+> 也可以自定義自己的 Interrupt Sources。
+
+Figure 98 Function_Status 的五個指定位元 (下圖的紅色處) :
+
+![Alt text](image/figure98.png)
+
+Figure 134 組合起來產生 `Function_Status_Alert` Interrupt 的中斷狀態條件。這 5 個位元中的任 1 位元從 0 變成 1 都會去 set `IntStat` bit。為了清除該中斷，這 5 個位元都必須為 0。
+
+![Alt text](image/figure134.png)
+
+#### Rules for Function-Level (Entity0) Interrupts ####
+
+1. Function 應該要實施 `Function_Status` Interrupt
+2. 倘若沒有實施 `Function_Status` Interrupt，但 UMP 把 `Function_Status[bit 4]` 從 0 改為 1 (`UMP_Sequence_Fault`)，此時 Function **要發起** Soft Reset (讓 Peripheral re-attach)
+3. 倘若沒有實施 `Function_Status` Interrupt，但 Function 把 `Function_Status[bit 2/3/4/5/6]` 從 0 改為 1，則 Function **可以發起** Soft Reset (讓 Peripheral re-attach)
+
+#### Function-Level (Entity0) Controls Used for Driver Selection ####
+
+Host 使用了描述 Device, Function 和 Extension 的 Function-Level Controls 來產生 name string，以協助識別每個功能之正確的 Driver。Table 174 中列出了可用於每個 name string 的 Controls Set 的一些典型範例。
+
+![Alt text](image/table174.png)
