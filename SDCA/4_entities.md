@@ -118,6 +118,29 @@ OT 沒有任何 Standardized Interrupt Sources，其行為由 Standard Class Sof
 
 > OT 可以自定義中斷來源
 
+#### DataPort_Selector Control (in IT & OT) ####
+
+- 用來控制哪個或哪幾個 DP(s) 來跟 Terminal 傳送/接收 Streams
+- 共 16 bits，由 4 × 4 nibble-indexes 組成 (Figure 117)
+
+![Alt text](image/figure117.png)
+
+#### Usage Control (in IT & OT) ####
+
+- `Usage` Control 是個 1-byte 整數 (Usage Number)
+- Usage Number 可以對應到 DisCo Information 的 Usage Map (Figure 118/119)
+
+![Alt text](image/figure118.png)
+![Alt text](image/figure119.png)
+
+#### MIC_Bias Control (in IT) ####
+
+- 使用 Analog Microphone 時會用到 MIC_Bias Control
+- 可以使用 Control Number 0（適用於所有 Channels）或 Control Number 1 ~ N（單獨控制某一個 Channel）
+- MIC_Bias Control 為一個 1-byte Spec-Encoded Value，對應的是事先定義好的偏壓 (Table 186)
+
+![Alt text](image/table186.png)
+
 Feature Unit (FU)
 -------
 
@@ -192,6 +215,53 @@ Platform FUs 應該要實現以下任一項：
 - A Channel Gain (i.e., 0x0B.1–n) Control
 - No Gain Control
 
+#### Mute Control ####
+
+- 1-bit Control
+    - `1` : signal is muted
+    - `0` : signal is unmuted
+- 可以用 Control Number 0 一次控制所有 Channels；也可以用 Control Number 1 ~ N 來獨立控制 Channel 1 ~ N
+
+#### Volume Control ####
+
+- Volume Control 都用在 non-Platform FUs (User/Class/Application)
+- 使用 Q7.8 的格式表示，共 16 bits，範圍是 −128.0 dB ~ +127.996 dB
+    - 1 bit 表示正負號
+    - 7 bits 表示整數部分
+    - 8 bits 表示小數部分
+- 可以用 Control Number 0 一次控制所有 Channels；也可以用 Control Number 1 ~ N 來獨立控制 Channel 1 ~ N
+
+#### Gain Control ####
+
+- Gain Control 都用在 Platform FU
+- 使用 Q7.8 的格式表示，共 16 bits，範圍是 −128.0 dB ~ +127.996 dB
+    - 1 bit 表示正負號
+    - 7 bits 表示整數部分
+    - 8 bits 表示小數部分
+- 可以用 Control Number 0 一次控制所有 Channels；也可以用 Control Number 1 ~ N 來獨立控制 Channel 1 ~ N
+
+#### AGC Control ####
+
+- 1-bit Control
+    - `1` : AGC is on
+    - `0` : AGC is off
+- 可以用 Control Number 0 一次控制所有 Channels；也可以用 Control Number 1 ~ N 來獨立控制 Channel 1 ~ N
+
+#### Bass Boost Control ####
+
+- 1-bit Control
+    - `1` : Bass Boost is on
+    - `0` : Bass Boost is off
+- 可以用 Control Number 0 一次控制所有 Channels；也可以用 Control Number 1 ~ N 來獨立控制 Channel 1 ~ N
+
+#### Loudness Control ####
+
+- 1-bit Control
+    - `1` : Loudness is on
+    - `0` : Loudness is off
+- 可以用 Control Number 0 一次控制所有 Channels；也可以用 Control Number 1 ~ N 來獨立控制 Channel 1 ~ N
+
+
 Mixer Unit (MU)
 -------
 
@@ -248,6 +318,15 @@ MU 應該要實現以下任一項：
 - 具有 DisCo Properties **`mipi-sdca-control-access-layer`=Class** 的 Fixed-Function Unity Gain Mixer（例如 UAJ Function 中的 side tone mixer）
 - 具有 DisCo Properties **`mipi-sdca-control-access-layer`=Platform** 的 Mixer（例如，SmartAmp Function 輸出路徑中的配套 Input Stream Mixer）
 
+#### Mixer Control (in MU) ####
+
+- 可以在 mix crosspoint 設定 Gain 值
+- 使用 Q7.8 的格式表示，共 16 bits，範圍是 −128.0 dB ~ +127.996 dB
+    - 1 bit 表示正負號
+    - 7 bits 表示整數部分
+    - 8 bits 表示小數部分
+- Access Mode: DC, RO, RW, or Dual
+
 Selector Unit (SU)
 -------
 
@@ -281,6 +360,12 @@ Table 130 是 Device SU 的 Controls 列表：
 #### SU: Interrupt Sources ####
 
 SU 沒有任何 Standardized Interrupt Sources，其行為由 Standard Class Software 來處裡。
+
+#### Selector Control (in SU) ####
+
+- 用來選擇要讓哪個 input pin signal 輸出
+    - 設 0 代表 no signal 輸出到 output pin
+- Access mode: RW (read-write)
 
 Group Entity (GE)
 -------
@@ -398,6 +483,8 @@ Software 會使用 interrupt 來偵測 `Detected_Mode` Control 何時會因 Jack
 - 將值寫入 `Selected_Mode` 實際上是一種捷徑，它取代了需執行一組寫入操作的 Host Software，並確保所有寫入操作同時發生
 - 同一組 Mode Numbers 用於 `Detected_Mode` 和 `Selected_Mode` (unknown detected Peripheral 的特殊值除外)
 
+
+
 Clock Source (CS)
 -------
 
@@ -443,6 +530,29 @@ synchronizable) 或 3 (internal for source-synchronous) 時 (參考 Table 143)�
 
 ![Alt text](image/table145.png)
 
+#### SampleRateIndex Control (in CS)
+
+- 是一個 byte index
+    - Figure 131 是 SampleRateIndex Contol 的 mipi-sdca-control-range 的 DisCo Buffer 的結構
+    - Figure 132 用 Figure 131 的結構來舉例
+
+![Alt text](image/figure131.png)
+![Alt text](image/figure132.png)
+
+連接到 DP（例如 SmartMic 中的 CS17）的 OT/IT clock source 中的 SampleRateIndex Control 會通知 Audio Function 正在使用的 Sample Rate。
+
+正在使用的 Sample Rate 有可能會低於 DP 的傳輸速率，例如，當：
+
+- 使用 Flow-Controlled 以 48kHz 傳輸率來傳輸 44.1k Samples/sec 時
+- 對更高速率的 Input Stream 使用正常（non-Flow-Controlled）傳輸，然後由 Input Terminal 進行二次取樣，例如，對於接收 full rate render stream 的 LFE 放大器
+
+#### Clock_Valid (CS) ####
+
+- 用於 Transducer CS 來指示 clock output 是有否有效
+    - `0` : invalid (off or unstable or at the wrong frequency)
+    - `1` : valid (stable and at the correct frequency)
+- Access Mode : RO
+
 Clock Selector (CX)
 -------
 
@@ -475,6 +585,13 @@ CX 會有兩個 clock input pins 和一個 clock output pin。
 #### CX: Interrupt Sources ####
 
 **CX 沒有任何 Standardized Interrupt Sources**，其行為由 Standard Class Software 來處理。
+
+#### Clock_Select (CX) ####
+
+- 從輸入的兩個 Clock Source 中選一個
+    - `1` : The Output Pin is a copy of the clock on Input Pin 1
+    - `2` : The Output Pin is a copy of the clock on Input Pin 2
+- Access Mode : RW
 
 Power Domain Entity (PDE)
 -------
@@ -678,3 +795,47 @@ Figure 134 組合起來產生 `Function_Status_Alert` Interrupt 的中斷狀態�
 Host 使用了描述 Device, Function 和 Extension 的 Function-Level Controls 來產生 name string，以協助識別每個功能之正確的 Driver。Table 174 中列出了可用於每個 name string 的 Controls Set 的一些典型範例。
 
 ![Alt text](image/table174.png)
+
+#### Function_Status (Function-Level) ####
+
+- 用來指示 Function 的狀態
+- Table 198 是 `Function_Status` Control
+
+![Alt text](image/table198.png)
+![Alt text](image/table198-2.png)
+![Alt text](image/table198-3.png)
+
+- Table 199 是 Reset 後的 Function_Status Value 表
+
+![Alt text](image/table199.png)
+
+**Host Software Handling of Function_Status**
+
+Host Software 要以下順序來處理 Function_Status Control:
+
+1. 若觸發了特定事件（例如：Power-up、Reset、Function_Status Interrupt、Deferred Control Read/Write Failure）就要去讀取 `Function_Status` Control
+2. 根據 `Function_Status` 內的值去執行對應的動作
+3. 如果對 `Function_Action` 寫入 0x01 (`Reset_Function_Now`)，這時候就要等待 Function_Action:`Reset_Function_Now` 被清除，然後再跳到 Step#6
+4. 將 `Function_Status` 寫入 `Function_Status_Read_Value` & `0x7F`
+5. 如果有設定了 `Ints_Disabled_Abnormally` bit，則要在 `SDCA_IntMask` 暫存器中寫入對應位元來 Enable Function_Status Control Interrupt
+6. 再次讀取 `Function_Status` Control 以確保它是 `0` 或 `0x80`，如果是其他值的話，就要重新做 Step#2 ~ Step#5
+7. 到這裡 Driver 就完成對 `Function_Status` Control 的處理了
+
+Table 200，當 `Function_Status` 5 個位元中的其中一個位是 1，就會發生 `Function_Status` Interrupt：
+
+![Alt text](image/table200.png)
+
+#### Function_Action (Function_Level) ####
+
+- 為 1-byte RW1S Control
+- 用來調用 Function-Level 的運作 (例如 Reset)
+
+![Alt text](image/table201.png)
+
+#### Commit_Group_Mask (Function_Level) ####
+
+- for Dual-Ranked 使用，透過將 1 寫入 Control 中的對應位元來選擇 Group (Table 202)
+- 當支援 Dual-Ranked 時，就會支援 Commit_Group_Mask Control 和 SoundWire Commit Register
+
+![Alt text](image/table202.png)
+

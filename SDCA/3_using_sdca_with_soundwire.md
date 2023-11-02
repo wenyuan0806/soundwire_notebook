@@ -153,6 +153,19 @@ Host Software Sequences for Stream Control
     - B. Write 1 clear Function_Status [bit 5]（`Function_Needs_Initialization`）
 6. 如果 `Function_Status` Control 的 [bit 6] 是 1（`Function_Has_Been_Reset`），而且 Control 是由 Class Software 管理的話，則：
     - A. 寫入 Default Values，或恢復成先前保存的值
+---
+**Default Value Priority**
+- User or OS
+- Class Software
+- Platform-specific Default Value specified in a DisCo
+    - mipi-sdca-control-default-value
+    - mipi-sdca-control-cn-<n>-default-value
+- Specification-define hardware reset value
+- Implementation-defined hardware reset value
+- A Known existing value (初始化前設定的Value)
+- An unknown/unpredictable value
+---
+
 7. Write 1 Clear Function_Status [bit 6]（`Function_Has_Been_Reset`）
 8. 清除 Function_Status 中的其它位元：對所有 High bits 寫 1，或直接寫入 0xFF 也可以
 9. 打開所有必要的 Interrupt（例如 `FDL_CurrentOwner`, `AE_Number`, `OpaqueSetReq_Index`, `Function_Status`）
