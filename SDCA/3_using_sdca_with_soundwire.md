@@ -69,6 +69,8 @@ Device 用 Read/Write Command 時，26 bits Hirarchical Address 如下：
 
 SoundWire 分配了 **64 MB** for SDCA Memory (`0x44000000` - `0x47FFFFFF`)。
 
+![Alt text](image/address_for_sdca_memory.png)
+
 定址方式跟 SDCA Controls Access 一樣，可以直接看 Figure 153：
 
 ![Alt text](image/figure153.png)
@@ -85,8 +87,6 @@ SoundWire 分配了 **64 MB** for SDCA Memory (`0x44000000` - `0x47FFFFFF`)。
     - Memories implemented in Device Function (hardware)
 - `0x47F00000` – `0x47FFFFFF`
     - Memories implemented in Function Agent (software/firmware)
-
-![Alt text](image/address_for_sdca_memory.png)
 
 #### Accessing Dual-Ranked Registers with SoundWire ####
 

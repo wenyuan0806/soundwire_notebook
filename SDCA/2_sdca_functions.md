@@ -70,3 +70,31 @@ Figure 60 是與 SmartMic 相關的 Function Agent Topology：
 - IT11（Terminal Type：`0x205`，Mic Array Transducer Input）將來自麥克風的 Sample Signal 饋入 SmartMic。麥克風訊號的保真度（包括內部取樣率）會受 IT11：Usage Control 的影響
 - IT111 (Terminal Type：`0x18A`，Streaming Mic Sink DP) 把來自外部 SoundWire Mic 的 optional Signal 饋入 SmartMic，然後跟 CRU111 的 main Signal 混和在一起
 - PPU11 選擇將哪些 mic Channels 饋送到 capture paths 和/或儲存在 SMPU history buffer 中。例如:用來適應終端設備姿勢的變化，像是合上筆電的蓋子、翻轉平板的角度
+
+Universal Audio Jack Function (UAJ)
+-------
+
+UAJ Function 是通用的 Input/Output 拓樸，並且支援 Jack 的所有用途，可以直接看 Figure 63。
+
+UAJ 具有 Input/Output Section，而這些 Section 的 Mode 由 GE Con​​trols 的 `Detected_Mode` 和 `Selected_Mode` 決定。
+
+- UAJ Output Section 可以有以下用途
+    - Line Output
+    - Speaker Output
+    - Headphone Output
+    - Headset Output
+- UAJ Input Section 可以有以下用途
+    - Line Input
+    - Mic Input
+    - Headset Mic Input
+
+> Headphone 指的是沒 Mic 的耳機、Headset 指的是有 Mic 的耳機。
+
+當 Headset 連接到 UAJ Jack 時，UAJ 的 Output Section 進入 Headset Output mode，Input Section 則進入 Headset Input mode。也就是說，Headset Output/Input mode 是成對的。
+
+#### Effects of GE in the UAJ Function ####
+
+與 GE:`Detected_Mode` 關聯的屬性提供了一個 Control List，當寫入對應的 GE:`Selected_Mode` 時，這些 Controls 將會受到影響，或當裝置插入 Jack #1 or Jack #2 時，這些 Controls 會自動設定。此功能將自動將 DisCo Property `mipi-sdca-ge-selectedmode-controls-affected` 中所列的 Controls 變更為 Table 50 中所示的設定：
+
+![Alt text](image/table50.png)
+

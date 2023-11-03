@@ -127,11 +127,15 @@ OT 沒有任何 Standardized Interrupt Sources，其行為由 Standard Class Sof
 
 #### Usage Control (in IT & OT) ####
 
-- `Usage` Control 是個 1-byte 整數 (Usage Number)
-- Usage Number 可以對應到 DisCo Information 的 Usage Map (Figure 118/119)
+- `Usage` Control 裡面有個 1-byte 整數 (`Usage Number`)
+- 用 `Usage Number` 可以對應到 DisCo Information 的 Usage Map 裡面 Row (Figure 118/119)
 
 ![Alt text](image/figure118.png)
 ![Alt text](image/figure119.png)
+
+- Usage Map 裡面還會有 Usage CBN，可以對照 Table 185 來使用
+
+![Alt text](image/table185.png)
 
 #### MIC_Bias Control (in IT) ####
 
