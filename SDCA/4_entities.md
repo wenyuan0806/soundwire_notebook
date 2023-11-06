@@ -175,7 +175,9 @@ Usage Control 提供額外資訊來幫助 internal signal format 和 dynamic ran
 
 #### Matching_GUID (in IT/OT/Function-Level) ####
 
-128 bits Read-only GUID（透過 16 個 Control Number 提供，每個都 1-byte），用於將 Functions 或 Sub-Functions 與系統的其他部分進行配對。例如，外部顯示器的 driver，其音訊透過 SDCA Function 傳送。
+- 共 128 bits 且 Read-Only (放在 16 個 1-byte 的 Control Number 中) 
+- 用於將 Function 與系統內的其他東西進行配對 
+    - 例如讓 SDCA Function 跟外部顯示器的 driver 進行配對，讓顯示器的 audio 可以透過 SDCA Function 來播放
 
 Feature Unit (FU)
 -------
@@ -416,6 +418,8 @@ Figure 92 用 SDCA Audio Function Topology 來說明 GE：
 DisCo 屬性定義了哪些 Control 和 Entity 會被 GE 的 Selected_Mode Control 所改變。Audio Function Topology 中，任何可能受到 GE 影響的 Entity（例如 Selector Unit）都會用橘色背景和紅色虛線框來標示。
 
 ### GE: Behavior for Selecting Jacks in UAJ and RJ Functions ###
+
+![Alt text](image/table154.png)
 
 #### Device Behavior for Jack Insertion ####
 
