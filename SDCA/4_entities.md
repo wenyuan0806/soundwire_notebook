@@ -480,9 +480,9 @@ Table 153 為 Detected_Mode 與 Selected_Mode 各種 Mode 下的解釋：
 
 #### GE: Controls ####
 
-Figure 154 是 GE in the `UAJ` and `RJ` Functions 的 Control List。
+Table 154 是 GE in the `UAJ` and `RJ` Functions 的 Control List。
 
-![Alt text](image/figure154.png)
+![Alt text](image/table154.png)
 
 #### GE: Controls with Reset Values ####
 
