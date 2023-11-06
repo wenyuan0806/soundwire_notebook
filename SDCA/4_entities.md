@@ -69,6 +69,24 @@ IT 沒有任何 Standardized Interrupt Sources，其行為由 Standard Class Sof
 
 > 可以自定義 IT 的中斷來源。
 
+#### ClusterIndex (in IT/CRU/MFPU/UDMPU) ####
+
+- ClusterIndex Control 用來控制或報告目前由 Entity 的 output pin 生成的 cluster
+- 在 UDMPU 中，ClusterIndex 可以影響對信號的處裡 (例如對放大器中的 Transducer 進行均衡)
+- 當 ClusterIndex 和 Bypass Control 同時存在時（例如，在 UDMPU 中），Bypass 可以覆蓋 ClusterIndex Control 的當前設定
+- 當軟體將 Bypass Control 改為 1（bypassed）時，輸出的 Cluster 要跟 Input Pin #1 上的 Cluster 相同，但 ClusterIndex Control 本身不應從其當前值變化
+- 當 Bypass 為 1 時，該 Unit 不應對輸送到 Output Pin 的信號進行處理
+- ClusterIndex Control 值 0 表示 Entity 的 Output Pin 上的 Cluster 遵循輸入到其 Input Pin 1 的任何 Cluster 定義
+- Access Mode 為 RW 的 ClusterIndex Controls 可能在 SDCA_Reset 之後具有自定義的值
+- 在使用包含具有 Access Mode 為 RW 的 ClusterIndex Control 的 Entity 的 signal path 之前，Host Software 應將 ClusterIndex 設定為已知的值
+- 每個 ClusterIndex 都可以對應到一個 ClusterID (Figure 116) 
+
+![Alt text](image/figure116.png)
+
+- 接下來可以在 DisCo Cluster Library 中用 ClusterID 查找對應的 Cluster (Figure 155) 
+
+![Alt text](image/figure155.png)
+
 Output Terminal (OT)
 -------
 
@@ -122,16 +140,26 @@ OT 沒有任何 Standardized Interrupt Sources，其行為由 Standard Class Sof
 
 - 用來控制哪個或哪幾個 DP(s) 來跟 Terminal 傳送/接收 Streams
 - 共 16 bits，由 4 × 4 nibble-indexes 組成 (Figure 117)
+    - 也就是說一個 IT/OT 可以連接最多 4 個 DP 
 
 ![Alt text](image/figure117.png)
+
+- Figure 117 DataPort_Selector Control 填完後會去對應 Figure 113 Data Port Selector Map，如此一來就可以知道 IT/OT 被 connect 到哪個 DP 
+
+![Alt text](image/figure113.png)
 
 #### Usage Control (in IT & OT) ####
 
 - `Usage` Control 裡面有個 1-byte 整數 (`Usage Number`)
 - 用 `Usage Number` 可以對應到 DisCo Information 的 Usage Map 裡面 Row (Figure 118/119)
+- 為 Optional Control，但發生以下兩項時就要強制使用:
+    - 對於 Stream IT/OT，當 Function 不支援所有 SampleRate/SampleWidth 組合時，就要用 Usage Control 來報告支援哪些組合 
+    - 對於 Stream IT/OT，當 Function 不支援 SampleRate 一半（即奈奎斯特限制）的頻寬時，IT/OT 就要用 Usage Control 報告頻寬。例如：SmartAmp render path 使用 96kSamples/sec，但卻不支援 Ultrasound 
 
 ![Alt text](image/figure118.png)
 ![Alt text](image/figure119.png)
+
+Usage Control 提供額外資訊來幫助 internal signal format 和 dynamic range 與 Host Agent 期望的 external stream format（DP or Transducer）相容。一些 Usage Control 用於將有關可能設定的資訊從 Device Function 傳送到 Host Agent，一些則用於將選擇從 Host Agent 傳送到 Device Function，還有一些是兩者都用。
 
 - Usage Map 裡面還會有 Usage CBN，可以對照 Table 185 來使用
 
@@ -144,6 +172,10 @@ OT 沒有任何 Standardized Interrupt Sources，其行為由 Standard Class Sof
 - MIC_Bias Control 為一個 1-byte Spec-Encoded Value，對應的是事先定義好的偏壓 (Table 186)
 
 ![Alt text](image/table186.png)
+
+#### Matching_GUID (in IT/OT/Function-Level) ####
+
+128 bits Read-only GUID（透過 16 個 Control Number 提供，每個都 1-byte），用於將 Functions 或 Sub-Functions 與系統的其他部分進行配對。例如，外部顯示器的 driver，其音訊透過 SDCA Function 傳送。
 
 Feature Unit (FU)
 -------
