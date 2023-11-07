@@ -437,7 +437,7 @@ DisCo 屬性定義了哪些 Control 和 Entity 會被 GE 的 Selected_Mode Contr
 
 #### Class Software Behavior for Jack Insertion ####
 
-當 Class Software 看到 `GE:Detected_Mode` Control 改變時 (可能是透過 polling 或 interface 看到的)，它必須執行以下至少一項：
+當 Class Software 看到 `GE:Detected_Mode` Control 改變時 (可能是透過 polling 或 interrupt 看到的)，它必須執行以下至少一項：
 
 1. 若新的 `GE:Detected_Mode` value 是一個已知的 peripheral (value 不是 1)，則會把這個 value 寫到 `GE:Selected_Mode` Control
     - 與 `GE:Detected_Mode` 的值相同
@@ -878,4 +878,16 @@ Table 200，當 `Function_Status` 5 個位元中的其中一個位是 1，就會
 - 當支援 Dual-Ranked 時，就會支援 Commit_Group_Mask Control 和 SoundWire Commit Register
 
 ![Alt text](image/table202.png)
+
+#### Function_SDCA_Version Control ####
+
+- 為 1-byte，用 2-digit BCD 來表示
+
+![Alt text](image/table203.png)
+
+#### Function_Type Control ####
+
+- 為 1-byte，用來識別是哪個 Function Topology，如 Table 1
+
+![Alt text](image/table1.png)
 
