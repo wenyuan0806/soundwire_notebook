@@ -891,3 +891,17 @@ Table 200，當 `Function_Status` 5 個位元中的其中一個位是 1，就會
 
 ![Alt text](image/table1.png)
 
+Channel Remapping Unit (CRU)
+-------
+
+![Alt text](image/figure78.png)
+
+- CRU 是 UDMPU 的 subset，用於做簡單的 channel selection
+- CRU 在輸入和輸出 channels 之間套用預先定義好的 mapping
+- Channel 的數量可能會增加或減少，並且 channel 的編號順序可能會改變
+- CRU 的範例用途：
+    - 選擇 channel 的 subset，例如 heterogeneous array 內具有 ultrasound 功能的麥克風
+    - 複製 channel（例如，將單聲道 ultrasound render 訊號饋送到多個輸出 channel）
+- CRU 有一個 ClusterIndex Control 可以控制 input/output pin 之間的 channel mapping
+
+![Alt text](image/table83.png)
