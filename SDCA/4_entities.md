@@ -1014,7 +1014,7 @@ SDCA_Reset 後的 Controls Value：
 
 **Example 1**
 
-當第一個 Trigger 舉起了 IntStat[N]，但在 Host Agent 處理第一個 Trigger 之前又發生了第二個 Trigger，則之後 Host Agent 可以一起處理兩個 Trigger。
+當第一個 Trigger 舉起了 `IntStat[N]`，但在 Host Agent 處理第一個 Trigger 之前又發生了第二個 Trigger，則之後 Host Agent 可以一起處理兩個 Trigger。
 
 以下是處理步驟：
 
@@ -1024,15 +1024,15 @@ SDCA_Reset 後的 Controls Value：
 4. Host Agent 來處理 Interrupt，去讀 `IntStat[N]` 和 `SMPU_Trigger_Status`
 5. Host Agent 處理完剛剛發生的兩個 Trigger Event
 6. Host Agent W1C `Trigger_Status[1&2]`
-7. Host Agent 檢查 `Trigger_Status`，如果都為 0 則可以 W1C `IntStat`
-8. Host Agent 去 W1C `IntStat[N]`
+7. Host Agent 檢查 `Trigger_Status`，如果都為 0 則可以清 `IntStat`
+8. Host Agent 去清除 `IntStat[N]`
 9. Host Agent 檢查 `IntStat`，如果都為 0 則完成此次 Interrupt Handling
 
 > **Step#7, #9** 可以避免處理兩個 Trigger 還要重新開一次 interrupt service。
 
 **Example 2**
 
-如果在清除 IntStat[N] 前發生了第三個 Trigger，則 Host Agent 要先處理完 Trigger 3 再清 IntStat。
+如果在清除 `IntStat[N]` 前發生了第三個 Trigger，則 Host Agent 要先處理完 Trigger 3 再清 `IntStat`。
 
 1. 初始條件：`SMPU_Trigger_Enable[bit 1, 2, 3]` 皆為 1
 2. 發生 Trigger 1 -> `SMPU_Trigger_Status[1]=1` -> 舉起 `IntStat[N]` -> Device 發 alert
@@ -1044,3 +1044,26 @@ SDCA_Reset 後的 Controls Value：
 8. 又發生了 Trigger 3 -> `SMPU_Trigger_Status[3]=1`
 9. Host Agent write 1 to `IntClear[N]` 但 `Trigger_Status != 0`，則 `IntStat[N]` 保持為 1
 10. Host Agent 檢查發現 `InsStat` 沒有全是 0，要跳到 **Step#4** 處理新發生的 Trigger
+
+Up-Down Mixer Processing Unit (UDMPU)
+-------
+
+![Alt text](image/figure88.png)
+
+- UDMPU 可以在 Input 和 Output Channel 之間使用預先定義好的 Mapping
+- Output Cluster 的每個 Channel 都是由 Input Cluster 的一個或多個 Channel 產生的，Channel 數可能會增加或減少並且 Channel 編號順序可能會改變
+- UDMPU 的使用範例：
+    - 將 Left/Right Channel Mix 在一起，以產生一個 Center Channel
+    - 將 Matrix decode 來產生 5.1 Channel Output
+    - 驅動 Asymmetric Transducers（例如低音和高音揚聲器）之路徑中的 Frequency-dependent filtering
+    - 將來自多個 Output Transducers 的 Reference Channels 組合成單一個 multi-channel Reference Stream
+
+#### UDMPU: Controls ####
+
+- Table 133 是 Non-Transducer UDMPU
+
+![Alt text](image/table133.png)
+
+- Table 134 是 Transducer UDMPU
+
+![Alt text](image/table134.png)
