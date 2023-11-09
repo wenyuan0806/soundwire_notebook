@@ -905,3 +905,142 @@ Channel Remapping Unit (CRU)
 - CRU 有一個 ClusterIndex Control 可以控制 input/output pin 之間的 channel mapping
 
 ![Alt text](image/table83.png)
+
+SmartMic Processing Unit (SMPU)
+-------
+
+- SMPU 有四種型態：
+    - NBH SMPU : No History Buffer
+    - SHB SMPU : Simple History Buffer
+    - FHB SMPU : History Buffer with Faster-than-real-time transfer
+    - UHB SMPU : History Buffer with faster-than-real-time transfer and Read capability
+- 可以實現以下應用：
+    - Voice detection
+    - Contextual Event (e.g., breaking glass, dog bark, crying baby, hey Siri)
+    - Ultrasound carrier detect
+- SMPU 的聲音 trigger 由 Trigger_Enable & Trigger_Status 來控制
+    - History Buffer 可以儲存 trigger 前/後的數據，等 trigger 後再上傳到 Host
+        - 可以用 flow-controlled 以高於 SampleRate 的速度把 History Buffer 內 Queue 住的數據上傳到 Host
+        - 或者用 UMP 的方式上傳到 Host
+- SMPU 也可以使用 D-to-D messaging 來協調多個 Microphone 的運作 (UMP)
+
+
+#### SMPU: Controls List ####
+
+![Alt text](image/table119.png)
+
+#### SMPU: History Control ####
+
+
+- 有以下三種 History Buffer Type :
+    - No UMP
+    - A UMP with a simplified UMP Client
+    - A UMP with a full UMP Client
+
+- 有四種 History Buffer Mode (Table 120)
+    - **Mode 0** : History Buffer 為一個簡單的 FIFO，裡面可能有多個 Sample，並且要用 real-time stream 來傳輸這些 Sample
+    - **Mode 1** : History Buffer 為一個簡單的 FIFO，裡面可能有大量 Sample，並且要使用比 real-time 更快的傳輸和 flow-control 來傳輸這些 Sample
+    - **Mode 2** : Sample 要直接從 History Buffer 中讀取 (除了那些被 real-time stream 傳輸的 Sample 以外)
+    - **Mode 3** : 沒有 History Buffer，Sample 要直接用 real-time stream 傳輸
+
+![Alt text](image/table120.png)
+
+![Alt text](image/table121.png)
+
+![Alt text](image/figure136.png)
+
+#### SMPU: Controls with Reset Values ####
+
+SDCA_Reset 後的 Controls Value：
+
+![Alt text](image/table123.png)
+
+#### SMPU: DisCo BMT for Trigger_Ready, Trigger_Enable, and Trigger_Status Controls ####
+
+- Table 124 為 SMPU:`Trigger_Enable` Control 的 BitIndex Mapping Table 中使用的 Class Behavior Numbers (CBNs)
+
+![Alt text](image/table124.png)
+
+- Table 125 為 SMPU:`Trigger_Status` Control 的 BitIndex Mapping Table 中使用的 Detailed Behavior Numbers (DBNs)
+
+![Alt text](image/table125.png)
+
+#### SMPU: DisCo Properties ####
+
+![Alt text](image/table126.png)
+
+#### SMPU: Interrupt Sources ####
+
+- 觸發 Interrupt 的時機
+    - `Trigger_Status` : 非 0 時
+    - `Hist_CurrentOwner` : 變更為 Host 時
+    - `DtoDTx_CurrentOwner` : 變更為 Host 時
+    - `DtoDRx_CurrentOwner` : 變更為 Host 時
+
+![Alt text](image/table127.png)
+
+#### SMPU: Trigger_Ready Control (in SMPU) ####
+
+- 用於報告哪些 acoustic trigger 已經準備好可以被 enable 了
+- `Trigger_Ready` 是一個 BitIndex DC/RO Control，其 bitNumber 定義在 DisCo BitIndex Mapping Table (Figure 114/115)
+    - for the associated `Trigger_Enable` Control
+
+![Alt text](image/figure114.png)
+![Alt text](image/figure115.png)
+
+#### SMPU: Trigger_Enable Control (in SMPU) ####
+
+- 用來控制 SMPU 要 enable 哪些 trigger
+- `Trigger_Enable` 是一個 BitIndex RW Control，其 bitNumber 定義在 DisCo BitIndex Mapping Table (Figure 114/115)
+
+#### SMPU: Trigger_Status Control (in SMPU) ####
+
+- 用於報告已偵測到哪些 acoustic trigger，然後在 SMPU 中清除該狀態
+- `Trigger_Status` 是一個 BitIndex RW1C Control，其 bitNumber 定義在 DisCo BitIndex Mapping Table (Figure 114/115)
+    - for the associated `Trigger_Enable` Control
+
+#### SMPU: Triggering ####
+
+- 在 enable trigger 前，software 會 polling `Trigger_Ready` 檢查是不是 1，如果在定義的 timeout 時間內 (`mipi-sdca-trigger-ready-max-delay`) 沒被設為 1，那本次 Trigger 就失敗了
+    - 要自定義何時去 set `Trigger_Ready` Control
+- `SDCA_IntStat` 為 read-only，`SDCA_IntClear` 為 write-only，但這些暫存器的行為與 RW1C `SDCA_IntStat` 相同，只是操作取決於 SMPU:`Trigger_Status`：
+    - 對於所有 Trigger Event E，當 `Trigger_Status[E]=1` AND `Trigger_Enable[E]=1` 時，則 `SDCA_IntStat[N]` 要為 1
+    - 而當沒有任何 E 符合 `Trigger_Status[E]=1` AND `Trigger_Enable[E]=1` 時，則 `SDCA_IntStat[N]` 可以改為 0
+- `SDCA_Trigger_Status` 為 RW1C，且取決於讀取 `Trigger_Status` 的事件順序：
+    - 當對應的 Event E 發生時，`SDCA_Trigger_Status[E]` 要改為 1
+    - 如果在上次處理完 `Trigger_Status[E]` 後沒再發生 Event E，則 `SDCA_Trigger_Status[E]` 可以改為 0
+
+#### Examples of Host Agent Reading SMPU Trigger ####
+
+**Example 1**
+
+當第一個 Trigger 舉起了 IntStat[N]，但在 Host Agent 處理第一個 Trigger 之前又發生了第二個 Trigger，則之後 Host Agent 可以一起處理兩個 Trigger。
+
+以下是處理步驟：
+
+1. 初始條件：`SMPU_Trigger_Enable[bit 1, 2, 3]` 皆為 1
+2. 發生 Trigger 1 -> `SMPU_Trigger_Status[1]=1` -> 舉起 `IntStat[N]` -> Device 發 alert
+3. 又發生了 Trigger 2 -> `SMPU_Trigger_Status[2]=1`
+4. Host Agent 來處理 Interrupt，去讀 `IntStat[N]` 和 `SMPU_Trigger_Status`
+5. Host Agent 處理完剛剛發生的兩個 Trigger Event
+6. Host Agent W1C `Trigger_Status[1&2]`
+7. Host Agent 檢查 `Trigger_Status`，如果都為 0 則可以 W1C `IntStat`
+8. Host Agent 去 W1C `IntStat[N]`
+9. Host Agent 檢查 `IntStat`，如果都為 0 則完成此次 Interrupt Handling
+
+> **Step#7, #9** 可以避免處理兩個 Trigger 還要重新開一次 interrupt service。
+
+**Example 2**
+
+如果在清除 IntStat[N] 前發生了第三個 Trigger，則 Host Agent 要先處理完 Trigger 3 再清 IntStat。
+
+1. 初始條件：`SMPU_Trigger_Enable[bit 1, 2, 3]` 皆為 1
+2. 發生 Trigger 1 -> `SMPU_Trigger_Status[1]=1` -> 舉起 `IntStat[N]` -> Device 發 alert
+3. 又發生了 Trigger 2 -> `SMPU_Trigger_Status[2]=1`
+4. Host Agent 來處理 Interrupt，去讀 `IntStat[N]` 和 `SMPU_Trigger_Status`
+5. Host Agent 處理完剛剛發生的兩個 Trigger Event
+6. Host Agent W1C `Trigger_Status[1&2]`
+7. Host Agent 檢查 `Trigger_Status`，如果都為 0 則可以 W1C `IntStat`
+8. 又發生了 Trigger 3 -> `SMPU_Trigger_Status[3]=1`
+9. Host Agent write 1 to `IntClear[N]` 但 `Trigger_Status != 0`，則 `IntStat[N]` 保持為 1
+10. Host Agent 檢查發現 `InsStat` 沒有全是 0，要跳到 **Step#4** 處理新發生的 Trigger
