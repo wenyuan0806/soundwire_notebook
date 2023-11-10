@@ -1045,6 +1045,8 @@ SDCA_Reset 後的 Controls Value：
 9. Host Agent write 1 to `IntClear[N]` 但 `Trigger_Status != 0`，則 `IntStat[N]` 保持為 1
 10. Host Agent 檢查發現 `InsStat` 沒有全是 0，要跳到 **Step#4** 處理新發生的 Trigger
 
+![Alt text](image/figure138.png)
+
 Up-Down Mixer Processing Unit (UDMPU)
 -------
 
