@@ -999,6 +999,39 @@ SDCA_Reset 後的 Controls Value：
 - `Trigger_Status` 是一個 BitIndex RW1C Control，其 bitNumber 定義在 DisCo BitIndex Mapping Table (Figure 114/115)
     - for the associated `Trigger_Enable` Control
 
+#### SMPU: Trigger_Extension Control (in SMPU) ####
+
+- 用來報告已偵測到的 Trigger 的額外資訊
+
+#### SMPU: Hist_Buffer_Mode (in SMPU) ####
+
+- 用來選擇 History Buffer Mode
+    - **0** : 從 buffer 做 real-time stream。Capture stream 會以 1 倍 sample rate 輸出到 DP，而 buffer 就像具有恆定延遲的 FIFO
+    - **1** : 從 buffer 做 real-time stream。Capture stream 也可以用 flow-control (比 real-time 更快的速度) 把 buffer 內的東西輸出
+    - **2** : 從 buffer 讀取。Capture stream 以 1 倍 sample rate 運行，並使用 Read Command 或 BRA 來讀取 Buffer
+    - **3** : 沒有 buffer。Capture stream 以 1 倍 sample rate 輸出到 DP
+
+要使用 `mipi-sdca-control-range` Range Template #1 來報告該 SMPU 支援哪些 Mode。
+
+#### Hist_Buffer_Preamble (in SMPU) ####
+
+- 為 1-byte RO Control，用來報告 streaming data 中前面多少個 sample 是無效的，到 Host Agent 那邊時會將其移除
+- 這個 Control 要在發生 SMPU Trigger 且 `Hist_CurrentOwner` 從 Device 變更到 Host 時才會有效
+
+#### Hist_Error (in SMPU) ####
+
+- 用來指示 history buffer 的狀態
+- 為 1-byte RO Control，用 3-bit 來指示 history buffer 狀態
+    - **Bit 0 Preamble Overflow**
+        - 0 : Hist_Buffer_Preamble 指示的無效 Sample 數是合法的
+        - 1 : Hist_Buffer_Preamble 指示的無效 Sample 數是不合法的
+    - **Bit 1 Buffer Wrapped**
+        - 0 : 代表 history buffer 還沒 overflow
+        - 1 : 代表 history buffer 已經 overflow (write-pointer 趕上 read-pointer)
+    - **Bit 2 Trigger Not In Buffer**
+        - 0 : 從偵測到 Trigger 後抓的 sample 都在 history buffer 裡面
+        - 1 : 從偵測到 Trigger 後抓的 sample 已不在 history buffer 裡面(可能被覆蓋了)
+
 #### SMPU: Triggering ####
 
 - 在 enable trigger 前，software 會 polling `Trigger_Ready` 檢查是不是 1，如果在定義的 timeout 時間內 (`mipi-sdca-trigger-ready-max-delay`) 沒被設為 1，那本次 Trigger 就失敗了
@@ -1046,6 +1079,48 @@ SDCA_Reset 後的 Controls Value：
 10. Host Agent 檢查發現 `InsStat` 沒有全是 0，要跳到 **Step#4** 處理新發生的 Trigger
 
 ![Alt text](image/figure138.png)
+
+#### SMPU History Buffer Mode 0 or 1: Stream from Buffer ####
+
+- 在 History Buffer Mode 0/1 時有 Circular Buffer，但不能用 UMP 來傳輸 audio data
+- 下面是一個範例，在偵測到 audio events 之前不會主動做任何 streaming 以節省功耗，然後使用 history buffer 先儲存 Trigger 前一小段時間的 sample
+- 在 trigger 後再透過 streaming 輸出 history buffer 內的 sample
+    - **Mode 0** : 只能透過 real-time streaming (所以會有延遲)
+    - **Mode 1** : 可以用 flow-control 先趕快輸出 history buffer data
+
+![Alt text](image/figure139.png)
+
+偵測到 Trigger 後，Host Agent 會 Enable DP，而當 Host Agent Enable DP 時，會發生以下幾點：
+
+1. Device Function 要把 SMPU:`Hist_CurrentOwner` 給 Host，並且在 SMPU:`Hist_MessageLength` 填 History Data Size
+2. Host 可以透過 W1S SMPU:`Hist_CurrentOwner` 把 ownership 交給 Device
+3. Host Software 可以使用 `Hist_MessageLength` 來動態變更 SoundWire DP Rate 以平衡 bandwidth 和 latency
+4. Host Softare 會使用 `Hist_Preamble` 確認從麥克風捕獲的 sample 數
+
+**Data Flow Through Circular Buffer in History Buffer Mode 0 or 1**
+
+- 如果 OT Sample Width 不是 8 的倍數，則每個 Sample 要用 0 在 LSB 端填充到 8 的倍數
+    - OT Sample Width & Sample Rate 是在 OT:`Usage` Control 裡設定的
+
+**Latency Through SMPU in Hist Buffer Mode 0 or 1**
+
+- 當 Host enable OT DP 時，output stream 的 Latency 公式為
+    - (((byte write pointer – byte read pointer) ÷ Padded Sample Width) ÷ Sample Rate)
+- 因此，如果 Mode 1 使用 flow-control 時，Latency 會慢慢衰減到 0
+
+**SMPU Circular Buffer Overflows in History Buffer Mode 0 or 1**
+
+當第一次 enable Triggers 來開始儲存 sample 時：
+
+1. 如果 circular buffer overflow 時 (write-pointer 趕上 read-pointer)，則 Set SMPU:`Hist_Error` Bit 1 (BufferOverflow) to 1
+
+當 DP 被重新 enable 時：
+
+2. 若 SMPU:Hist_Error Bit 1 (BufferOverflow) 為 0，則傳送的第一個 sample 會跟之前啟用 DP 時傳送的最後一個 sample 相鄰
+3. 若 SMPU:Hist_Error Bit 1 (BufferOverflow) 為 1，則傳送的第一批 sample 可以是 silence
+4. Host 可以讀取 SMPU:Hist_Error Bit 1 來確認 sample 有沒有連續
+5. 如果 Trigger 很久後 Host 才 enable DP，trigger point 可能已經被覆蓋掉了，這時要 set SMPU:Hist_Error Bit 2 (TriggerNotInBuffer) to 1
+
 
 Up-Down Mixer Processing Unit (UDMPU)
 -------
