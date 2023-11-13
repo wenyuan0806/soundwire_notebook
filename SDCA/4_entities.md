@@ -1121,6 +1121,56 @@ SDCA_Reset 後的 Controls Value：
 4. Host 可以讀取 SMPU:Hist_Error Bit 1 來確認 sample 有沒有連續
 5. 如果 Trigger 很久後 Host 才 enable DP，trigger point 可能已經被覆蓋掉了，這時要 set SMPU:Hist_Error Bit 2 (TriggerNotInBuffer) to 1
 
+#### SMPU History Buffer Mode 2: Read from Buffer Using Memory Reads ####
+
+Host 可以透過 BRA 來 read SMPU History Buffer。
+
+![Alt text](image/figure140.png)
+
+**Data Flow Through Circular Buffer in History Buffer Mode 2**
+
+1. Circular Buffer 的大小要等於 `Buffer_Length`（這是 DisCo 中報告的值）
+2. Device 要支援 Host Agent 用任意順序從 buffer 讀取數據
+3. Circular Buffer 中之前未傳輸的 history data 的最舊部分的位址要在 SMPU:`Hist_MessageOffset` 中報告(可以參考 Figure 142 灰色/綠色重疊數據末尾的藍色指針)
+4. 如果在 SMPU 填滿所有 Circular Buffer 之前 enable DP，則實際 history data 量將小於 Circular Buffer 的大小，並且 SMPU 應在 SMPU:`Hist_MessageLength` 中報告較小的大小
+5. 如果 OT Sample Width 不是 8 的倍數，則每個 Sample 要用 0 在 LSB 端填充到 8 的倍數
+
+**Reading History Data After Trigger Occurs for History Buffer Mode 2**
+
+1. Trigger Event 發生時，Host Agent 要 enable DP
+    - At the next Sample Event:
+        - SMPU 停止將 sample 寫入 circular buffer 並開始將 sample 傳送到 OT （SMPU 和 DP 輸出之間會有少量 DP FIFO Buffer，並且該函數在第一個真實樣本之前以 silence 方式填充該 FIFO。）
+        - Function 要去更新 SMPU:`Hist_Buffer_Preamble` 以報告此 FIFO 中的樣本數，讓 Host 知道要丟棄多少 Sample
+        - Function 要去更新 SMPU:`Hist_MessageOffset` and SMPU:`Hist_MessageLength`，以報告 History data 的位置和長度
+        - Function 要把 Hist_CurrentOwner 設成 0 (Host)，讓 Host 可以去讀 buffer
+    - Host 從 Buffer 讀出部分或全部的 history data
+    - Host W1S SMPU:Hist_CurrentOwner，將 ownership 交給 Device
+        - 這會讓 SMPU 開始繼續存 sample 到 circular buffer，同時也會透過 FIFO 繼續把 sample 送到 DP
+    - 經過短暫延遲以允許 DP 輸出仍在 FIFO 中的樣本（例如 16 個 samples）後，Host disable DP。最小 sample 數寫在 DisCo `mipi-sdca-smpu-empty-fifo-count`
+        - 當 Host disable DP 時，SMPU 會記住與尚未傳送到 DP 的最舊樣本相對應的 byte-write-pointer value
+
+**Example Mode 2 Format for Samples Stored in History Buffer**
+
+Figure 141 顯示了使用 Table 45 的 Usage Number 2、3 or 4（對於具有 24 位元和 20 位元樣本大小的 2 個麥克風）時的 history buffer 格式範例。
+
+![Alt text](image/figure141.png)
+
+**Example History Buffer Mode 2 Sequences**
+
+![Alt text](image/figure142.png)
+
+#### SMPU History Buffer Mode 3: No Buffer ####
+
+- 沒有 history buffer，因此 sample 要直接用 real-time stream 輸出到 OT，但也因為這樣，Mode 3 的延遲是最小的
+- 使用範例：例如提供具有 trigger detection 功能的 ultrasound。在該用例下通常不需要儲存 sample 以在觸發事件之後進行額外處理
+
+![Alt text](image/figure145.png)
+
+#### Rules for Sequencing of Changes to Hist_Buffer_Mode Control ####
+
+- 當對應 OT 的 DP 中的任何 Channel 啟用時，Host Agent 不可以更改 SMPU:Hist_Buffer_Mode
+- 在將 Hist_Buffer_Mode 從 2 (UMP) 變更為 0 或 1 (Streaming) 之前，Host Agent 要先 Disable UMP_HistoryBuffer Interrupt
+    - 因為 UMP 不會自己清除任何未完成的中斷
 
 Up-Down Mixer Processing Unit (UDMPU)
 -------
